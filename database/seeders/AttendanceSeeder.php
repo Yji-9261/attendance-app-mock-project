@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Attendance;
+use App\Models\User;
+
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Attendance;
+
 use Carbon\Carbon;
 
 class AttendanceSeeder extends Seeder
@@ -14,22 +17,36 @@ class AttendanceSeeder extends Seeder
      */
     public function run(): void
     {
-        //
-        //Attendance::factory()->count(10)->create();
+        // 前月/今月/翌月のdatetime生成
+        $currentMonth = Carbon::now()
+            ->startOfDay()
+            ->day(15)
+            ->hour(9);
+        $previousMonth = $currentMonth->copy()->subMonth();
+        $nextMonth = $currentMonth->copy()->addMonth();
 
-        Attendance::create([
-            "user_id" => "2",
-            "date" => Carbon::parse("2026-09-01 19:00:00"),
-            "clock_in" => Carbon::parse("2026-09-01 10:00:00"),
-            "clock_out" => Carbon::parse("2026-09-01 19:00:00"),
+        // 一般ユーザーをひとつ取得
+        $user = User::where('admin_status', false)->firstOrFail();
+
+        // 前月の勤怠情報を生成
+        $user->attendances()->create([
+            'date' => $previousMonth->copy()->hour(9),
+            'clock_in' => $previousMonth->copy()->hour(9),
+            'clock_out' => $previousMonth->copy()->hour(18),
         ]);
 
-        Attendance::create([
-            "user_id" => "2",
-            "date" => Carbon::parse("2026-09-02 21:00:00"),
-            "clock_in" => Carbon::parse("2026-09-02 10:00:00"),
-            "clock_out" => Carbon::parse("2026-09-02 21:00:00"),
+        // 今月の勤怠情報を生成
+        $user->attendances()->create([
+            'date' => $currentMonth->copy()->hour(9),
+            'clock_in' => $currentMonth->copy()->hour(9),
+            'clock_out' => $currentMonth->copy()->hour(18),
         ]);
 
+        // 翌月の勤怠情報を生成
+        $user->attendances()->create([
+            'date' => $nextMonth->copy()->hour(9),
+            'clock_in' => $nextMonth->copy()->hour(9),
+            'clock_out' => $nextMonth->copy()->hour(18),
+        ]);
     }
 }

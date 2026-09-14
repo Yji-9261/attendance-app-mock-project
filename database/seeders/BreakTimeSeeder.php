@@ -2,11 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\Attendance;
+use App\Models\User;
+
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Carbon\Carbon;
 
-use \App\Models\BreakTime;
+use Carbon\Carbon;
 
 class BreakTimeSeeder extends Seeder
 {
@@ -15,24 +17,10 @@ class BreakTimeSeeder extends Seeder
      */
     public function run(): void
     {
-        //
-        BreakTime::create([
-            "attendance_id" => "1",
-            "break_in" => Carbon::parse("2026-09-01 12:00:00"),
-            "break_out" => Carbon::parse("2026-09-01 13:00:00"),
+        $attendance = Attendance::findOrFail(1);
+        $attendance->breaktimes()->create([
+            'break_in' => $attendance->clock_in->copy()->hour(12),
+            'break_out' => $attendance->clock_in->copy()->hour(13),
         ]);
-
-        BreakTime::create([
-            "attendance_id" => "1",
-            "break_in" => Carbon::parse("2026-09-01 15:00:00"),
-            "break_out" => Carbon::parse("2026-09-01 15:30:00"),
-        ]);
-
-        BreakTime::create([
-            "attendance_id" => "1",
-            "break_in" => Carbon::parse("2026-09-01 18:00:00"),
-            "break_out" => Carbon::parse("2026-09-01 18:30:00"),
-        ]);
-
     }
 }

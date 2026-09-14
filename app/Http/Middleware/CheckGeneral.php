@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckAdmin
+class CheckGeneral
 {
     /**
      * Handle an incoming request.
@@ -15,10 +15,11 @@ class CheckAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->user()->admin_status) {
-            abort(403, '管理者権限が必要です。');
+        if (auth()->user()->admin_status) {
+            abort(403, '一般ユーザー向けの機能です');
         }
 
         return $next($request);
+
     }
 }

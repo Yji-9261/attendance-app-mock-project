@@ -79,7 +79,12 @@ class User extends Authenticatable
                         // 1.休憩時間未登録なら出勤中
                         // 2.最新の休憩時間の休憩終了が打刻済み
                         // 上記以外なら休憩中とする
-                        $breaktime = $attendance->breaktimes()->latest()->first();
+    
+                        // 万が一同一時刻で打刻された場合の対策として最新のIDで判定とする
+                        //$breaktime = $attendance->breaktimes()->latest()->first();
+                        $breaktime = $attendance->breaktimes()
+                            ->latest('id')
+                            ->first();
                         if (!$breaktime || $breaktime->break_out) {
                             return '出勤中';
                         } else {
