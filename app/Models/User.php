@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Laravel\Sanctum\HasApiTokens;
 use Carbon\Carbon;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -81,7 +81,6 @@ class User extends Authenticatable
                         // 上記以外なら休憩中とする
     
                         // 万が一同一時刻で打刻された場合の対策として最新のIDで判定とする
-                        //$breaktime = $attendance->breaktimes()->latest()->first();
                         $breaktime = $attendance->breaktimes()
                             ->latest('id')
                             ->first();

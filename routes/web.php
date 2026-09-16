@@ -34,19 +34,12 @@ Route::get('/', function () {
     }
 });
 
-//一般ユーザー・管理者共通機能
-Route::middleware('auth')->group(function () {
-    Route::get('/attendance/list', [AttendanceController::class, 'index']);//勤怠一覧表示
-    Route::get('/attendance/{id}', [AttendanceController::class, 'show']);//勤怠詳細表示
-    Route::post('/attendance/{id}', [ApplicationController::class, 'store']);//修正申請処理
-    Route::get('/stamp_correction_request/list', [ApplicationController::class, 'index']);//申請一覧表示
-    Route::get('/application/{id}', [ApplicationController::class, 'show']);////申請詳細表示
-});
-
 // 一般ユーザーのみの機能
-Route::middleware(['auth', 'general'])->group(function () {
+Route::middleware(['auth', 'verified', 'general'])->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'create']);//勤怠打刻画 面表示
     Route::post('/attendance', [AttendanceController::class, 'store']);//勤怠打刻処理
+
+    Route::get('/attendance/report', [AttendanceController::class, 'report']);//report処理
 });
 
 // 管理者ログイン画面・処理
@@ -61,4 +54,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/attendance/staff/{id}', [StaffController::class, 'showAttendance']);//スタッフ勤怠詳細表示
     Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [ApprovalController::class, 'show']);//申請承認画面表示
     Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [ApprovalController::class, 'store']);//申請承認処理
+
+    Route::post('/export', [StaffController::class, 'exportCsv']);//申請承認処理
 });
+
+//一般ユーザー・管理者共通機能
+Route::middleware(['auth', 'general.verified'])->group(function () {
+    Route::get('/attendance/list', [AttendanceController::class, 'index']);//勤怠一覧表示
+    Route::get('/attendance/{id}', [AttendanceController::class, 'show']);//勤怠詳細表示
+    Route::post('/attendance/{id}', [ApplicationController::class, 'store']);//修正申請処理
+    Route::get('/stamp_correction_request/list', [ApplicationController::class, 'index']);//申請一覧表示
+    Route::get('/application/{id}', [ApplicationController::class, 'show']);////申請詳細表示
+});
+
+

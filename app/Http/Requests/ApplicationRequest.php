@@ -2,9 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Attendance;
-use Carbon\Carbon;
-
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApplicationRequest extends FormRequest

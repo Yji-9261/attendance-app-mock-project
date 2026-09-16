@@ -108,15 +108,10 @@
                         </div>
                     </div>
                 </div>
-                @if($attendanceRecord['approval_status'] !== '承認待ち')
+
                 <div class="form__button">
                     <button class="form__button--submit" type="submit">修正</button>
                 </div>
-                @else
-                <div class="form__button">
-                    <p class="readonly-message">承認待ちのため修正できません</p>
-                </div>
-                @endif
         </form>
     </div>
 @endsection

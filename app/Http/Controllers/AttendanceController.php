@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Application;
 use App\Models\Attendance;
-use App\Models\BreakTime;
 
 use Illuminate\Http\Request;
 
@@ -146,6 +144,176 @@ class AttendanceController extends Controller
     }
 
     /**
+     * 月毎の６ヶ月分勤怠データ取得
+     * @return \Illuminate\Database\Eloquent\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int|string, mixed>>
+     */
+    private function getSixMonthAttendances()
+    {
+        // 本日から過去6ヶ月の勤怠レコードを取得する
+        $now = Carbon::now();
+        // 過去6ヶ月の定義が難しい
+        // 1.9/15の過去６ヶ月→4/15〜9/15なのか
+        // 2.9/15の過去６ヶ月→4/01〜9/30なのか
+        // レポート表記的には2の方が適していると判断する
+        //$startMonth = $now->copy()->startOfDay()->subMonthsNoOverflow(5);
+        //$endMonth = $now->copy()->endOfDay();
+        $startMonth = $now->copy()->startOfMonth()->subMonthsNoOverflow(5);
+        $endMonth = $now->copy()->endOfMonth();
+
+        // ６ヶ月分データを月毎にグループ化して取得
+        $sixMonthAttendances = auth()->user()
+            ->attendances()
+            ->with('breaktimes')
+            ->whereBetween('date', [$startMonth, $endMonth])
+            ->get()
+            ->groupBy(function ($attendance) {
+                return $attendance->date->format('Y-m');
+            });
+
+        // 勤怠が存在しない月には空のcollectionを用意する
+        while ($startMonth->timestamp < $endMonth->timestamp) {
+            $yearMonth = $startMonth->format('Y-m');
+            if (!$sixMonthAttendances->has($yearMonth)) {
+                $sixMonthAttendances->put($yearMonth, collect());
+            }
+            $startMonth->addMonthNoOverflow();
+        }
+
+        // 年月(Y-m)形式のキーを降順で並び替え
+        return $sixMonthAttendances->sortKeysDesc();
+    }
+
+
+    /**
+     * 月毎のレポート算出
+     */
+    private function calculateMonthlyAttendanceReport($monthlyAttendances)
+    {
+        $monthlyReport = $monthlyAttendances->reduce(function ($carry, $attendance) {
+            $clock_in = $attendance->clock_in;
+            $clock_out = $attendance->clock_out;
+
+            // 退勤打刻後なら１日の休憩時間を算出
+            $breakTimeMinutes =
+                !$clock_out
+                ? 0
+                : $attendance->breaktimes->sum(function ($breakTime) {
+                    if (!$breakTime->break_in || !$breakTime->break_out) {
+                        // 休憩時間に空白があるなら0で算出しておく
+                        return 0;
+                    }
+                    return (int) $breakTime->break_in->diffInMinutes($breakTime->break_out);
+                });
+
+            // １日の勤務時間を算出、退勤打刻前の場合0として計算
+            $diffWorkTimeMinutes =
+                $clock_out
+                ? (int) $clock_in->diffInMinutes($clock_out)
+                : 0;
+
+            // 勤務時間から休憩時間を差し引いて労働時間とする
+            $diffWorkTimeMinutes -= $breakTimeMinutes;
+            $carry['work_minutes'] += $diffWorkTimeMinutes;
+
+            // 残業時間算出（１日8時間を超えた分の時間を残業とする）
+            $overTime = $diffWorkTimeMinutes - 480;
+            $carry['overtime_minutes'] += $overTime >= 0 ? $overTime : 0;
+
+            // 遅刻回数カウント(出勤時間が9時超過の場合)
+            $lateMinutes = (int) $clock_in
+                ->copy()
+                ->startOfDay()
+                ->hour(9)
+                ->diffInMinutes($clock_in, false);
+
+            if ($lateMinutes > 0) {
+                $carry['late_count'] += 1;
+            }
+
+            // 退勤打刻前ならnullの可能性あり
+            if ($clock_out) {
+                // 早退回数カウント(退勤時間が18時未満の場合)
+                $earlyMinutes = (int) $clock_out
+                    ->copy()
+                    ->startOfDay()
+                    ->hour(18)
+                    ->diffInMinutes($clock_out, false);
+
+                if ($earlyMinutes < 0) {
+                    $carry['early_leave_count'] += 1;
+                }
+
+                // 総合計日数加算、退勤前の勤怠データは平均日数に計上しない
+                $carry['total_day'] += 1;
+            }
+
+            // 長時間労働日数カウント(10時間を超えた労働時間の場合)
+            if ($diffWorkTimeMinutes > 10 * 60) {
+                $carry['long_work_count'] += 1;
+            }
+
+            return $carry;
+
+        }, [
+            'work_minutes' => 0,
+            'overtime_minutes' => 0,
+            'late_count' => 0,
+            'early_leave_count' => 0,
+            'long_work_count' => 0,
+            'total_day' => 0,
+        ]);
+
+        return $monthlyReport;
+    }
+
+    /**
+     * レポート画面表示
+     * GET(/attendance/report)
+     */
+    public function report(Request $request)
+    {
+        // 過去６ヶ月分の月毎の勤怠データ
+        $sixMonthsAttendaces = $this->getSixMonthAttendances();
+
+        // 月毎のデータを取得
+        $summaries = collect();
+        foreach ($sixMonthsAttendaces as $key => $monthlyAttendances) {
+            $summary = $this->calculateMonthlyAttendanceReport($monthlyAttendances);
+
+            // $keyは'Y-m'形式の年月文字列。月のみをmonthに格納する
+            $summary['month'] = Carbon::parse($key)->month;
+            $summaries->add($summary);
+        }
+
+        // 基本サマリー計算
+        $total_work_minutes = $summaries->sum('work_minutes');
+        $total_overtime_minutes = $summaries->sum('overtime_minutes');
+        $total_days = $summaries->sum('total_day');
+        $avg_work_minutes = 0;
+        if ($total_days > 0) {
+            $avg_work_minutes = $total_work_minutes / $total_days;
+        }
+
+        $summary = [
+            'total_work_minutes' => $total_work_minutes,
+            'total_overtime_minutes' => $total_overtime_minutes,
+            'avg_work_minutes' => $avg_work_minutes,
+        ];
+
+        // 月毎のトレンド 
+        $monthlyTrend = $summaries;
+
+        // 今月分の異常値
+        $anomalies = $summaries->firstWhere('month', Carbon::now()->month);
+
+        return view('reports.index', [
+            'summary' => $summary,
+            'monthlyTrend' => $monthlyTrend,
+            'anomalies' => $anomalies,
+        ]);
+    }
+
+    /**
      * 出勤登録画面
      * GET(/attendance/{id})
      */
@@ -220,5 +388,4 @@ class AttendanceController extends Controller
             'user' => $attendance->user,
         ]);
     }
-
 }

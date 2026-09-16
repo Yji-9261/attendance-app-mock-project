@@ -2,15 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attendance;
-use App\Models\BreakTime;
 use App\Models\User;
-use Database\Factories\BreakTimeFactory;
-use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 
 use Carbon\Carbon;
 

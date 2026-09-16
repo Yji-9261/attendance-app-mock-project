@@ -35,11 +35,9 @@
                     <div class="form__group">
                         <label class="form__header" for="new_clock_in">出勤・退勤</label>
                         <div class="form__input-group">
-                            {{-- <input class="form__input" id="new_clock_in" type="text" name="new_clock_in" value="{{ $data['clock_in'] }}"> --}}
-                            <input class="form__input" id="new_clock_in" type="text" name="new_clock_in" value="{{ old('new_clock_in',$data['clock_in']) }}">
+                            <input class="form__input" id="new_clock_in" type="text" name="new_clock_in" value="{{ $data['clock_in'] }}">
                             <p>〜</p>
-                            {{-- <input class="form__input" type="text" name="new_clock_out" value="{{ $data['clock_out'] }}"> --}}
-                            <input class="form__input" type="text" name="new_clock_out" value="{{ old('new_clock_out', $data['clock_out']) }}">
+                            <input class="form__input" type="text" name="new_clock_out" value="{{ $data['clock_out'] }}">
                         </div>
                     </div>
 
@@ -56,11 +54,9 @@
                         <div class="form__group">
                             <label class="form__header">{{ $index === 0 ? '休憩' : '休憩' . ($index + 1) }}</label>
                             <div class="form__input-group">
-                                {{-- <input class="form__input" type="text" name="new_break_in[{{ $index }}]" value="{{ $break['break_in'] }}"> --}}
-                                <input class="form__input" type="text" name="new_break_in[{{ $index }}]" value="{{ old("new_break_in.$index", $break['break_in']) }}">
+                                <input class="form__input" type="text" name="new_break_in[{{ $index }}]" value="{{ $break['break_in'] }}">
                                 <p>〜</p>
-                                {{-- <input class="form__input" type="text" name="new_break_out[{{ $index }}]" value="{{ $break['break_out'] }}"> --}}
-                                <input class="form__input" type="text" name="new_break_out[{{ $index }}]" value="{{ old("new_break_out.$index",$break['break_out']) }}">
+                                <input class="form__input" type="text" name="new_break_out[{{ $index }}]" value="{{ $break['break_out'] }}">
                             </div>
                         </div>
                         <div class="error-message">
@@ -92,8 +88,7 @@
                     <div class="form__group">
                         <label class="form__header" for="comment">備考</label>
                         <div class="form__input-group">
-                            {{-- <input class="form__textarea" id="comment" name="comment" value="{{ $data['comment'] }}"> --}}
-                            <input class="form__textarea" id="comment" name="comment" value="{{ old('comment', $data['comment']) }}">
+                            <input class="form__textarea" id="comment" name="comment" value="{{ $data['comment'] }}">
                         </div>
                     </div>
 

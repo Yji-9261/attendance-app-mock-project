@@ -6,7 +6,6 @@ use App\Models\User;
 use Tests\TestCase;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 
 use Carbon\Carbon;
 

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attendance;
 use Illuminate\Testing\TestResponse;
 use App\Models\User;
 use Tests\TestCase;
