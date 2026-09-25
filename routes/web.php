@@ -36,7 +36,7 @@ Route::get('/', function () {
 
 // 一般ユーザーのみの機能
 Route::middleware(['auth', 'verified', 'general'])->group(function () {
-    Route::get('/attendance', [AttendanceController::class, 'create']);//勤怠打刻画 面表示
+    Route::get('/attendance', [AttendanceController::class, 'create']);//勤怠打刻画面表示
     Route::post('/attendance', [AttendanceController::class, 'store']);//勤怠打刻処理
 
     Route::get('/attendance/report', [AttendanceController::class, 'report']);//report処理
@@ -61,10 +61,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 //一般ユーザー・管理者共通機能
 Route::middleware(['auth', 'general.verified'])->group(function () {
     Route::get('/attendance/list', [AttendanceController::class, 'index']);//勤怠一覧表示
-    Route::get('/attendance/{id}', [AttendanceController::class, 'show']);//勤怠詳細表示
+    Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);//勤怠詳細表示
     Route::post('/attendance/{id}', [ApplicationController::class, 'store']);//修正申請処理
     Route::get('/stamp_correction_request/list', [ApplicationController::class, 'index']);//申請一覧表示
-    Route::get('/application/{id}', [ApplicationController::class, 'show']);////申請詳細表示
+    Route::get('/application/{id}', [ApplicationController::class, 'show']);//申請詳細表示
 });
-
-

@@ -278,6 +278,7 @@ class AttendanceStampTest extends TestCase
 
         // 勤怠レコードはテストデータとして一件のみなのでrecords[0]との比較で問題ない
         $records = $response->viewData('formattedAttendanceRecords');
+
         $this->assertEquals(
             $comparisonDate,
             $records[0]['date']

@@ -39,6 +39,23 @@ class Attendance extends Model
     }
 
     /**
+     * comment
+     * @return Attribute
+     */
+    public function comment(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $applcation = $this->applications()
+                    ->where('approval_status', '承認待ち')
+                    ->latest('application_date')
+                    ->first();
+                return $applcation ? $applcation->comment : "";
+            }
+        );
+    }
+
+    /**
      * 休憩を除いた勤務時間
      * @return Attribute
      */

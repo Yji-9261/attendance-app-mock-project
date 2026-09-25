@@ -10,7 +10,6 @@ use Carbon\Carbon;
 
 class AttendanceSeeder extends Seeder
 {
-
     /**
      * Run the database seeds.
      */
@@ -20,6 +19,11 @@ class AttendanceSeeder extends Seeder
         $this->createDummyForUser2();
     }
 
+    /**
+     * 検証用のダミー勤怠データ
+     * 開発プロセス意図的データ含む
+     * @return void
+     */
     private function createDummyForUser1()
     {
         // 対象のユーザー取得
@@ -62,6 +66,7 @@ class AttendanceSeeder extends Seeder
             // 月毎の勤怠作成個数が15未満で、平日なら勤怠データを生成
             if ($createdConutMonthly < 15 && $currentDate->isWeekday()) {
 
+                // ダミーデータ作成
                 $this->createDummy($user, $currentDate, 9, 0, 18, 0);
 
                 // 月毎の勤怠作成日をカウント
@@ -77,7 +82,10 @@ class AttendanceSeeder extends Seeder
             $currentDate->addDay();
         }
 
-        /**　今月の勤怠レコード作成 */
+        /**　
+         * 今月の勤怠レコード作成
+         * 勤怠異常データ(遅刻/早退/長時間労働)含む
+         */
         // 通常10件
         $this->createDummy($user, $currentDate, 9, 0, 18, 0, 10, true);
         // 残業時間3件
@@ -103,7 +111,7 @@ class AttendanceSeeder extends Seeder
 
         $user = User::where('name', 'user2')->firstOrFail();
 
-        // 5月前勤怠生成無作成
+        // 5月前勤怠生成(空データ)
         //$this->createDummy($user, $currentDate, 9, 0, 18, 0, 20, true);
 
         // 4月前勤怠生成(出勤時間遅めに)

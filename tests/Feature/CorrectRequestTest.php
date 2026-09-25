@@ -38,7 +38,10 @@ class CorrectRequestTest extends TestCase
         $this->actingAs($this->user);
 
         // 管理者ユーザー登録
-        $this->admin = User::factory()->create(['admin_status' => true]);
+        $this->admin = User::factory()
+            ->create([
+                'admin_status' => true
+            ]);
 
         // 勤怠データ登録
         Carbon::setTestNow(Carbon::parse('2026-09-13 10:00:00'));
@@ -55,7 +58,6 @@ class CorrectRequestTest extends TestCase
         ]);
         $this->attendance = $attendance;
 
-
         // ポストデータ
         $this->postData = [
             'new_clock_in' => $attendance->clock_in->format('H:i'),
@@ -65,6 +67,7 @@ class CorrectRequestTest extends TestCase
             'new_break_in' => $attendance->breaktimes->map(function ($record) {
                 return $record->break_in->format('H:i');
             })->toArray(),
+
             'new_break_out' => $attendance->breaktimes->map(function ($record) {
                 return $record->break_out->format('H:i');
             })->toArray(),

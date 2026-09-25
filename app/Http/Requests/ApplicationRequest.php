@@ -22,11 +22,22 @@ class ApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'new_clock_in' => ['required', 'date_format:H:i',],
+            'new_clock_in' => [
+                'required',
+                'date_format:H:i',
+            ],
 
-            'new_clock_out' => ['required', 'after_or_equal:new_clock_in', 'date_format:H:i',],
+            'new_clock_out' => [
+                'required',
+                'after_or_equal:new_clock_in',
+                'date_format:H:i',
+            ],
 
-            'comment' => ['required'],
+            'comment' => [
+                'required',
+                'string',
+                'max:255'
+            ],
 
             'new_break_in.*' => [
                 'nullable',
@@ -57,6 +68,7 @@ class ApplicationRequest extends FormRequest
             'new_clock_out.date_format' => '退勤時間が不適切な値です',
 
             'comment.required' => '備考を記入してください',
+            'comment.max' => '最大255文字までです',
 
             'new_break_in.*.after_or_equal' => '休憩時間が不適切な値です',
             'new_break_in.*.before_or_equal' => '休憩時間が不適切な値です',

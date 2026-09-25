@@ -13,9 +13,12 @@ return new class extends Migration {
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->dateTime('clock_in');
-            $table->dateTime('clock_out')->nullable();
-            $table->dateTime('date');
+            $table->date('date');
+            $table->time('clock_in');
+            $table->time('clock_out')->nullable();
+            //$table->dateTime('date');
+            // $table->dateTime('clock_in');
+            // $table->dateTime('clock_out')->nullable();
             $table->timestamps();
         });
     }

@@ -24,14 +24,14 @@ class AdminController extends Controller
     public function login(AdminLoginRequest $request)
     {
         $validated = $request->validated();
-
-        $user = auth()->attempt([
+        $isAuthorized = auth()->attempt([
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'admin_status' => true, // 管理者権限でのログインのみ許可
+            // 管理者権限でのログインのみ許可
+            'admin_status' => true,
         ]);
 
-        if ($user) {
+        if ($isAuthorized) {
             $request->session()->regenerate();
             return redirect('/admin/attendance/list');
         } else {

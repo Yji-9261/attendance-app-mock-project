@@ -18,8 +18,6 @@ return new class extends Migration {
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
-
-            //$table->string('attendance_status')->default('勤務外');
             $table->boolean('admin_status')->default(false);
         });
     }

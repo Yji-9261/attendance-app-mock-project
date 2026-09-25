@@ -13,9 +13,12 @@ return new class extends Migration {
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('attendance_id')->constrained()->cascadeOnDelete();
-            $table->dateTime('application_date');
-            $table->dateTime('new_clock_in');
-            $table->dateTime('new_clock_out');
+            $table->date('application_date');
+            $table->time('new_clock_in');
+            $table->time('new_clock_out');
+            //$table->dateTime('application_date');
+            //$table->dateTime('new_clock_in');
+            //$table->dateTime('new_clock_out');
             $table->string('comment');
             $table->string('approval_status')->default('承認待ち');
             $table->timestamps();
