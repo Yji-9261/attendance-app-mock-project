@@ -65,6 +65,6 @@ class ApprovalController extends Controller
             $application->save();
         });
 
-        return redirect("/stamp_correction_request/approve/{$application_id}");
+        return redirect("/stamp_correction_request/approve/{$application->id}");
     }
 }
