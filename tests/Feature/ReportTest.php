@@ -2,18 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\AttendanceController;
 use App\Models\User;
-
-use Database\Seeders\AttendanceSeeder;
-use Database\Seeders\UserSeeder;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-
-use Tests\TestCase;
-
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
 class ReportTest extends TestCase
 {
@@ -30,13 +23,13 @@ class ReportTest extends TestCase
     }
 
     /**
-     * マイ勤怠レポート機能	ゲストはレポートページにアクセスできない	
-     * 1. 未認証で GET /attendance/report を実行
-     * result. /login にリダイレクトされる
-     * @return void
+     * マイ勤怠レポート機能	ゲストはレポートページにアクセスできない
      */
-    public function test_guest_cannot_access_report_page(): void
+    public function testGuestCannotAccessReportPage(): void
     {
+        // 1. 未認証で GET /attendance/report を実行
+        // result. /login にリダイレクトされる
+
         // 非認証ユーザーがアクセスした時に
         // loginページにリダイレクトされるテスト
         $this->get('/attendance/report')
@@ -44,17 +37,18 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 1. 認証ユーザーで勤怠データを複数日作成
-     * 2. GET /attendance/report を実行
-     * result.レスポンスに 
-     *  summary（総労働時間/残業時間/平均値）
-     *  monthly_trend
-     *  anomalies 
-     * が正しい値で含まれる
-     * @return void
+     * 認証ユーザーの統計情報が正しく計算される
      */
-    public function test_authenticated_user_gets_correct_report(): void
+    public function testAuthenticatedUserGetsCorrectReport(): void
     {
+        // 1. 認証ユーザーで勤怠データを複数日作成
+        // 2. GET /attendance/report を実行
+        // result.レスポンスに
+        //  summary（総労働時間/残業時間/平均値）
+        //  monthly_trend
+        //  anomalies
+        // が正しい値で含まれる
+
         // CSVの対象期間に合わせて現在日時を固定する。
         $this->travelTo(Carbon::parse('2027-02-15 12:00:00'));
 
@@ -87,13 +81,14 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 勤怠記録がないユーザーで安全に処理される	
-     * 1. 勤怠データのないユーザーで認証
-     * 2. GET /attendance/report を実行
-     * result.各統計が 0 / 空配列で返り、エラーが発生しない
+     * 勤怠記録がないユーザーで安全に処理される
      */
-    public function test_get_empty_attendance_records_safely()
+    public function testGetEmptyAttendanceRecordsSafely(): void
     {
+        // 1. 勤怠データのないユーザーで認証
+        // 2. GET /attendance/report を実行
+        // result.各統計が 0 / 空配列で返り、エラーが発生しない
+
         $this->travelTo(Carbon::parse('2026-09-15 12:00:00'));
         $user = User::factory()->create(['email_verified_at' => now()]);
 
@@ -119,30 +114,43 @@ class ReportTest extends TestCase
         );
     }
 
+    /**
+     * レポートのビューに渡された集計値・月次推移・異常検知件数を期待値と比較する。
+     *
+     * @param  TestResponse  $response  レポートページのレスポンス
+     * @param  array<string, int|float>  $expectedSummary  総労働時間・残業時間・平均労働時間の期待値（分）
+     * @param  list<array<string, int>>  $expectedMonthlyTrend  表示順に並べた月別の期待値
+     * @param  array<string, int>  $expectedAnomalies  当月の遅刻・早退・長時間労働の件数の期待値
+     */
     private function checkRepotValues(
-        $response,
-        $expectedSummary,
-        $expectedMonthlyTrend,
-        $expectedAnomalies
-    ) {
+        TestResponse $response,
+        array $expectedSummary,
+        array $expectedMonthlyTrend,
+        array $expectedAnomalies
+    ): void {
         $summary = $response->viewData('summary');
         $anomalies = $response->viewData('anomalies');
         $monthlyTrend = $response->viewData('monthlyTrend');
 
-        // summaryチェック
+        // 全期間の総労働時間・残業時間・平均労働時間を検証する。
         $this->assertEquals($expectedSummary, $summary);
 
-        // anomaliesチェック
+        // 当月の遅刻・早退・長時間労働の件数を検証する。
         $this->assertEquals($expectedAnomalies, $anomalies);
 
-        // 件数と順番を含めてmonthlyTrendを確認する。
+        // 月次推移の件数・順序・各月の集計値を検証する。
         $this->assertCount(count($expectedMonthlyTrend), $monthlyTrend);
         foreach ($monthlyTrend as $index => $row) {
             $this->assertEquals($expectedMonthlyTrend[$index], $row);
         }
     }
 
-    /** BOM付きCSVを、ヘッダーをキーとする配列として読み込む。 */
+    /**
+     * BOM付きCSVを、ヘッダーをキーとする配列として読み込む
+     *
+     * @param  string  $filename  検証用のデータを作成するためのCSVファイルパス
+     * @return array[]
+     */
     private function readReportCsv(string $filename): array
     {
         $path = base_path('tests/Fixtures/report/' . $filename);
@@ -170,7 +178,11 @@ class ReportTest extends TestCase
         }
     }
 
-    /** CSVの時刻に勤怠日を付けて、勤怠と複数休憩を登録する。 */
+    /**
+     * CSVの時刻に勤怠日を付けて、勤怠と複数休憩を登録する。
+     *
+     * @param  User  $user  ユーザーモデル
+     */
     private function createAttendancesFromCsv(User $user): void
     {
         $rows = $this->readReportCsv('attendances.csv');
@@ -179,7 +191,7 @@ class ReportTest extends TestCase
         $this->assertCount(count($rows), array_unique($keys), 'record_keyが重複しています');
 
         foreach ($rows as $row) {
-            $toDateTime = fn(string $time) => $time === ''
+            $toDateTime = fn (string $time) => $time === ''
                 ? null
                 : Carbon::parse($row['date'] . ' ' . $time);
 
@@ -190,7 +202,7 @@ class ReportTest extends TestCase
             ]);
 
             foreach ($row as $column => $breakIn) {
-                if (!preg_match('/^break_in_(.+)$/', $column, $matches)) {
+                if (! preg_match('/^break_in_(.+)$/', $column, $matches)) {
                     continue;
                 }
                 $breakOutColumn = 'break_out_' . $matches[1];
@@ -208,7 +220,11 @@ class ReportTest extends TestCase
         }
     }
 
-    /** 入力勤怠から再計算せず、独立した期待値CSVを使用する。 */
+    /**
+     * 入力勤怠から再計算せず、独立した期待値CSVを使用する
+     *
+     * @return array<array|array{"avg_work_minutes": float|int, "total_overtime_minutes": int, "total_work_minutes": int|array{"early_leave_count": int, "late_count": int, "long_work_count": int}|mixed>}
+     */
     private function createExpectedReportFromCsv(): array
     {
         $rows = $this->readReportCsv('expected_report.csv');
@@ -251,6 +267,7 @@ class ReportTest extends TestCase
 
     /**
      * 空データ時の期待値を返す
+     *
      * @return array<array|array{"avg_work_minutes": int, "total_overtime_minutes": int, "total_work_minutes": int|array{"early_leave_count": int, "late_count": int, "long_work_count": int}>}
      */
     private function createEmptyExpectedData(): array
@@ -274,34 +291,35 @@ class ReportTest extends TestCase
             [
                 'month' => 9,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
             [
                 'month' => 8,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
             [
                 'month' => 7,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
             [
                 'month' => 6,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
             [
                 'month' => 5,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
             [
                 'month' => 4,
                 'work_minutes' => 0,
-                'overtime_minutes' => 0
+                'overtime_minutes' => 0,
             ],
         ];
+
         return [
             $expectedSummary,
             $expectedMonthlyTrend,

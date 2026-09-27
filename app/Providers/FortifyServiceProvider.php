@@ -55,6 +55,7 @@ class FortifyServiceProvider extends ServiceProvider
             return view('user.register');
         });
 
+        // メール認証画面
         Fortify::verifyEmailView(function () {
             return view('auth.verify-email');
         });

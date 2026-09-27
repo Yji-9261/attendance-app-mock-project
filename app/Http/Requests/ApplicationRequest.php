@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApplicationRequest extends FormRequest
@@ -17,7 +18,7 @@ class ApplicationRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -36,7 +37,7 @@ class ApplicationRequest extends FormRequest
             'comment' => [
                 'required',
                 'string',
-                'max:255'
+                'max:255',
             ],
 
             'new_break_in.*' => [
@@ -82,31 +83,4 @@ class ApplicationRequest extends FormRequest
 
         ];
     }
-
-
-    // いったん放置、応用問題が終わって時間があったら対応する
-    // public function withValidator($validator)
-    // {
-    //     // 休憩時間が
-    //     // 12:00~13:00 12:30~13:30
-    //     // の記載がされていたときに重複として弾く処理
-    //     $validator->after(function ($validator) {
-    //         $newBreakIns = $this->input('new_break_in', []);
-    //         $newBreakOuts = $this->input('new_break_out', []);
-
-    //         // 休憩時間が一個以下なら特殊な処理はない
-    //         if ($newBreakIns->count() <= 1) {
-    //             return;
-    //         }
-
-    //         foreach ($newBreakIns as $index => $item) {
-    //             $item->dateTimeBetween();
-    //         }
-
-    //         // 
-    //         if ($this->input('field_a') === 1 && empty($this->input('field_b'))) {
-    //             $validator->errors()->add('field_b', 'field_aが1の場合、field_bは必須です。');
-    //         }
-    //     });
-    // }
 }

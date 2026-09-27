@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Application extends Model
 {
@@ -24,11 +26,21 @@ class Application extends Model
         'new_clock_out' => 'datetime',
     ];
 
+    /**
+     * 休憩時間修正申請レコードとのリレーション
+     *
+     * @return HasMany
+     */
     public function breakapplications()
     {
         return $this->hasMany(BreakApplication::class);
     }
 
+    /**
+     * 勤怠レコードとのリレーション
+     *
+     * @return BelongsTo
+     */
     public function attendance()
     {
         return $this->belongsTo(Attendance::class);

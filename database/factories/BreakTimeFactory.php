@@ -3,12 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\Attendance;
+use App\Models\BreakTime;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-use Carbon\Carbon;
-
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BreakTime>
+ * @extends Factory<BreakTime>
  */
 class BreakTimeFactory extends Factory
 {

@@ -3,10 +3,10 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Attendance;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class UpdateAttendanceRequest extends FormRequest
 {
@@ -21,15 +21,11 @@ class UpdateAttendanceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         $attendance = $this->route('attendanceRecord');
-        //$attendance = Attendance::findOrFail($attendanceId);
-
-        //Log::info($attendance->user_id);
-        //Log::info($this->user()->id);
 
         return [
             'date' => [
@@ -41,10 +37,11 @@ class UpdateAttendanceRequest extends FormRequest
             ],
             'clock_in' => [
                 'required',
-                'date_format:H:i:s'
+                'date_format:H:i:s',
             ],
             'clock_out' => [
-                'date_format:H:i:s'
+                'date_format:H:i:s',
+                'after:clock_in'
             ],
         ];
     }

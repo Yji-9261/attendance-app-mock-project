@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-
-use Illuminate\Database\Seeder;
-
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class AttendanceSeeder extends Seeder
 {
@@ -22,6 +20,7 @@ class AttendanceSeeder extends Seeder
     /**
      * 検証用のダミー勤怠データ
      * 開発プロセス意図的データ含む
+     *
      * @return void
      */
     private function createDummyForUser1()
@@ -47,8 +46,8 @@ class AttendanceSeeder extends Seeder
             $currentDate->addDay();
         }
 
-        /**　
-         * 以下、意図的データ作成 
+        /**
+         * 以下、意図的データ作成
          */
 
         // 過去6ヶ月分のデータ生成
@@ -57,7 +56,7 @@ class AttendanceSeeder extends Seeder
             ->startOfMonth()
             ->hour(9);
 
-        //月毎の勤怠作成個数
+        // 月毎の勤怠作成個数
         $createdConutMonthly = 0;
 
         // ベース日付まで勤怠を生成する
@@ -82,7 +81,7 @@ class AttendanceSeeder extends Seeder
             $currentDate->addDay();
         }
 
-        /**　
+        /**
          * 今月の勤怠レコード作成
          * 勤怠異常データ(遅刻/早退/長時間労働)含む
          */
@@ -112,7 +111,7 @@ class AttendanceSeeder extends Seeder
         $user = User::where('name', 'user2')->firstOrFail();
 
         // 5月前勤怠生成(空データ)
-        //$this->createDummy($user, $currentDate, 9, 0, 18, 0, 20, true);
+        // $this->createDummy($user, $currentDate, 9, 0, 18, 0, 20, true);
 
         // 4月前勤怠生成(出勤時間遅めに)
         $currentDate = $baseDate->copy()
@@ -153,14 +152,15 @@ class AttendanceSeeder extends Seeder
 
     /**
      * Summary of createDummy
-     * @param mixed $user
-     * @param mixed $currentDate
-     * @param mixed $startHours
-     * @param mixed $startMinutes
-     * @param mixed $endHours
-     * @param mixed $endMinutes
-     * @param mixed $num
-     * @param mixed $isAddDate
+     *
+     * @param  mixed  $user
+     * @param  mixed  $currentDate
+     * @param  mixed  $startHours
+     * @param  mixed  $startMinutes
+     * @param  mixed  $endHours
+     * @param  mixed  $endMinutes
+     * @param  mixed  $num
+     * @param  mixed  $isAddDate
      * @return void
      */
     private function createDummy(
@@ -174,7 +174,7 @@ class AttendanceSeeder extends Seeder
         $isAddDate = false,
         $createdWeekEnd = false,
     ) {
-        //for ($i = 0; $i < $num; ++$i) {
+        // for ($i = 0; $i < $num; ++$i) {
         while ($num) {
             $date = $currentDate->copy();
 
@@ -184,11 +184,12 @@ class AttendanceSeeder extends Seeder
             }
 
             // 週末に勤怠作成しないモードなら作成しない
-            if (!$createdWeekEnd && $date->isWeekEnd()) {
-                if (!$isAddDate) {
-                    // 次の日に進めないモードなら無限ループになるので終了させる    
+            if (! $createdWeekEnd && $date->isWeekEnd()) {
+                if (! $isAddDate) {
+                    // 次の日に進めないモードなら無限ループになるので終了させる
                     break;
                 }
+
                 continue;
             }
 
@@ -198,9 +199,9 @@ class AttendanceSeeder extends Seeder
                 'clock_in' => $date->copy()->hour($startHours)->minutes($startMinutes),
                 'clock_out' => $date->copy()->hour($endHours)->minutes($endMinutes),
             ])->breaktimes()->create([
-                        'break_in' => $date->copy()->hour(12),
-                        'break_out' => $date->copy()->hour(13),
-                    ]);
+                'break_in' => $date->copy()->hour(12),
+                'break_out' => $date->copy()->hour(13),
+            ]);
 
             // 生成回数減算
             $num -= 1;

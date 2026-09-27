@@ -35,14 +35,14 @@ class Handler extends ExceptionHandler
         if ($e instanceof ModelNotFoundException) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'error' => '勤怠情報が見つかりませんでした。'
+                    'error' => '勤怠情報が見つかりませんでした。',
                 ], 404);
             }
         }
 
         if ($e instanceof AuthorizationException) {
             return response()->json([
-                'error' => 'この操作を実行する権限がありません。'
+                'error' => 'この操作を実行する権限がありません。',
             ], 403);
         }
 

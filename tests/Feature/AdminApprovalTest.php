@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Tests\TestCase;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class AdminApprovalTest extends TestCase
 {
@@ -15,7 +15,6 @@ class AdminApprovalTest extends TestCase
 
     /**
      * 認証可能ユーザー
-     * @var User
      */
     protected User $admin;
 
@@ -42,9 +41,8 @@ class AdminApprovalTest extends TestCase
 
     /**
      * ID15 承認待ちの修正申請が全て表示されている
-     * @return void
      */
-    public function test_can_view_all_pending_correction_requests(): void
+    public function testCanViewAllPendingCorrectionRequests(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -55,32 +53,28 @@ class AdminApprovalTest extends TestCase
 
     /**
      * ID15 承認済みの修正申請が全て表示されている
-     * @return void
      */
-    public function test_can_view_all_approved_correction_requests(): void
+    public function testCanViewAllApprovedCorrectionRequests(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
          * 2. 修正申請一覧ページを開き、承認済みのタブを開く
          */
-
         $this->assertCorrectionRequestsInTab('content2', '承認済み');
     }
 
-
     /**
      * ID15 修正申請の詳細内容が正しく表示されている
-     * @return void
      */
-    public function test_can_view_correction_requests_dateil(): void
+    public function testCanViewCorrectionRequestsDateil(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
-         * 2. 修正申請の詳細画面を開く 
+         * 2. 修正申請の詳細画面を開く
          */
 
         // 承認待ちのデータを作成
-        $users = $this->createTestDatas();
+        $users = $this->createTestRecords();
 
         // 修正申請データをひとつ取得
         $application = $users->firstOrFail()
@@ -95,7 +89,7 @@ class AdminApprovalTest extends TestCase
         // 遷移先が選択した日の勤怠であることを、表示上で確認する
         $expected = [
             $application->attendance->user->name,
-            $application->attendance->date->year . "年",
+            $application->attendance->date->year . '年',
             $application->attendance->date->format('n月j日'),
             $application->new_clock_in->format('G:i'),
             $application->new_clock_out->format('G:i'),
@@ -116,23 +110,21 @@ class AdminApprovalTest extends TestCase
         $response->assertSee('<button class="applied-form__button--submit" type="submit">承認</button>', false);
     }
 
-
     /**
      * ID15 修正申請の承認処理が正しく行われる
-     * @return void
      */
-    public function test_admin_can_approve_correction_request(): void
+    public function testAdminCanApproveCorrectionRequest(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
          * 2. 修正申請の詳細画面で「承認」ボタンを押す
          */
-        $users = $this->createTestDatas();
+        $users = $this->createTestRecords();
         $attendance = $users->firstOrFail()->attendances()->firstOrFail();
         $application = $attendance->applications()->firstOrFail();
 
         $expectedBreaks = $application->breakapplications()->orderBy('id')->get()
-            ->map(fn($breaktime) => [
+            ->map(fn ($breaktime) => [
                 $breaktime->break_in->toDateTimeString(),
                 $breaktime->break_out->toDateTimeString(),
             ])->all();
@@ -165,7 +157,7 @@ class AdminApprovalTest extends TestCase
 
         // 元の休憩が残らず、申請した休憩すべてに置き換わっている
         $actualBreaks = $attendance->breaktimes()->orderBy('id')->get()
-            ->map(fn($breaktime) => [
+            ->map(fn ($breaktime) => [
                 $breaktime->break_in->toDateTimeString(),
                 $breaktime->break_out->toDateTimeString(),
             ])->all();
@@ -180,17 +172,16 @@ class AdminApprovalTest extends TestCase
             ->assertDontSee('<button class="applied-form__button--submit" type="submit">承認</button>', false);
     }
 
-
-
-
-    /** 指定タブに対象状態の申請だけが全件表示されることを確認する。 */
+    /**
+     * 指定タブに対象状態の申請だけが全件表示されることを確認する
+     */
     private function assertCorrectionRequestsInTab(string $tabId, string $approvalStatus): void
     {
-        $users = $this->createTestDatas($approvalStatus);
+        $users = $this->createTestRecords($approvalStatus);
 
         // 反対の状態の申請も作成し、対象タブに混ざらないことを確認する
         $otherStatus = $approvalStatus === '承認待ち' ? '承認済み' : '承認待ち';
-        $this->createTestDatas($otherStatus);
+        $this->createTestRecords($otherStatus);
 
         $response = $this->actingAs($this->admin)
             ->get('/stamp_correction_request/list')
@@ -198,7 +189,7 @@ class AdminApprovalTest extends TestCase
             ->assertViewIs('admin.admin-application-list');
 
         // 対象タブのHTMLを取得するためDOMを使用
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         $previous = libxml_use_internal_errors(true);
         try {
             $document->loadHTML('<?xml encoding="UTF-8">' . $response->getContent());
@@ -211,7 +202,7 @@ class AdminApprovalTest extends TestCase
         $this->assertSame(1, $tabs->length);
 
         // 対象申請の件数とタブ内の行数を比較し、余分な申請の混入も検出する
-        $expectedCount = $users->sum(fn($user) => $user->applications->count());
+        $expectedCount = $users->sum(fn ($user) => $user->applications->count());
         $this->assertSame(10, $expectedCount);
         $rows = $xpath->query('.//table//tr[td]', $tabs->item(0));
         $this->assertSame($expectedCount, $rows->length);
@@ -241,10 +232,11 @@ class AdminApprovalTest extends TestCase
     }
 
     /**
-     * Summary of createTestDatas
-     * @return User|\Illuminate\Database\Eloquent\Collection<int, User|\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Eloquent\Model
+     * テスト用の各種レコードを生成し、それに紐つくユーザーを返す
+     *
+     * @return Collection<int, Model|User>|Model|User
      */
-    private function createTestDatas(string $approvalStatus = '承認待ち')
+    private function createTestRecords(string $approvalStatus = '承認待ち')
     {
         $users = User::factory()->count(10)->create();
         foreach ($users as $user) {
@@ -255,7 +247,7 @@ class AdminApprovalTest extends TestCase
             ]);
             $attendance->breaktimes()->create([
                 'break_in' => Carbon::now()->hour(12),
-                'break_out' => Carbon::now()->hour(13)
+                'break_out' => Carbon::now()->hour(13),
             ]);
 
             // 修正申請データ作成
@@ -271,12 +263,12 @@ class AdminApprovalTest extends TestCase
             $appliation->breakapplications()->createMany([
                 [
                     'break_in' => Carbon::now()->hour(11),
-                    'break_out' => Carbon::now()->hour(12)
+                    'break_out' => Carbon::now()->hour(12),
                 ],
                 [
                     'break_in' => Carbon::now()->hour(18),
-                    'break_out' => Carbon::now()->hour(19)
-                ]
+                    'break_out' => Carbon::now()->hour(19),
+                ],
             ]);
         }
 

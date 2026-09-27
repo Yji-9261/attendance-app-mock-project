@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BreakApplication extends Model
 {
@@ -20,6 +21,11 @@ class BreakApplication extends Model
         'break_out' => 'datetime',
     ];
 
+    /**
+     * 勤怠修正申請レコードとのリレーション
+     *
+     * @return BelongsTo
+     */
     public function application()
     {
         return $this->belongsTo(Application::class);

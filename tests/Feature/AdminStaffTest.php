@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Testing\TestResponse;
 use App\Models\User;
-use Tests\TestCase;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
 class AdminStaffTest extends TestCase
 {
@@ -36,7 +34,7 @@ class AdminStaffTest extends TestCase
     /**
      * ID14 管理者ユーザーが全一般ユーザーの「氏名」「メールアドレス」を確認できる
      */
-    public function test_can_get_all_staff_list(): void
+    public function testCanGetAllStaffList(): void
     {
         /**
          * 1. 管理者でログインする
@@ -45,26 +43,25 @@ class AdminStaffTest extends TestCase
 
         // テスト用のユーザーを生成する
         $user1 = [
-            "name" => "testA",
-            "email" => "testA@test.com",
-            "password" => "password",
+            'name' => 'testA',
+            'email' => 'testA@test.com',
+            'password' => 'password',
         ];
         $this->createTestUsers($user1);
 
         $user2 = [
-            "name" => "testB",
-            "email" => "testB@test.com",
-            "password" => "password",
+            'name' => 'testB',
+            'email' => 'testB@test.com',
+            'password' => 'password',
         ];
         $this->createTestUsers($user2);
 
         $user3 = [
-            "name" => "testC",
-            "email" => "testC@test.com",
-            "password" => "password",
+            'name' => 'testC',
+            'email' => 'testC@test.com',
+            'password' => 'password',
         ];
         $this->createTestUsers($user3);
-
 
         // スタッフ一覧画面に表示されているかテスト
         $this->actingAs($this->admin)
@@ -76,14 +73,14 @@ class AdminStaffTest extends TestCase
             ->assertSeeInOrder([
                 $user1['name'],
                 $user1['email'],
-                '詳細'
+                '詳細',
             ])
 
             // スタッフ2の表示確認
             ->assertSeeInOrder([
                 $user2['name'],
                 $user2['email'],
-                '詳細'
+                '詳細',
             ])
 
             // スタッフ3の表示確認
@@ -94,11 +91,10 @@ class AdminStaffTest extends TestCase
             ]);
     }
 
-
     /**
      * ID14 ユーザーの勤怠情報が正しく表示される
      */
-    public function test_can_view_staff_attendance_for_current_month(): void
+    public function testCanViewStaffAttendanceForCurrentMonth(): void
     {
         /**
          * 1. 管理者ユーザーでログインする
@@ -120,7 +116,7 @@ class AdminStaffTest extends TestCase
     /**
      * ID14 「前月」を押下した時に表示月の前月の情報が表示される
      */
-    public function test_can_view_staff_attendance_for_previous_month(): void
+    public function testCanViewStaffAttendanceForPreviousMonth(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -150,7 +146,7 @@ class AdminStaffTest extends TestCase
     /**
      * ID14 「翌月」を押下した時に表示月の翌月の情報が表示される
      */
-    public function test_can_view_staff_attendance_for_next_month(): void
+    public function testCanViewStaffAttendanceForNextMonth(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -182,7 +178,7 @@ class AdminStaffTest extends TestCase
     /**
      * ID14 「詳細」を押下すると、その日の勤怠詳細画面に遷移する
      */
-    public function test_can_open_staff_attendance_detail_from_monthly_list(): void
+    public function testCanOpenStaffAttendanceDetailFromMonthlyList(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -210,12 +206,12 @@ class AdminStaffTest extends TestCase
             $detailResponse = $this->get($detailUrl)
                 ->assertOk()
                 ->assertViewIs('admin.admin-detail')
-                ->assertViewHas('attendanceRecord', fn($record) => $record['id'] === $attendance->id);
+                ->assertViewHas('attendanceRecord', fn ($record) => $record['id'] === $attendance->id);
 
             // 遷移先が選択した日の勤怠であることを、表示内容でも確認する
             $expected = [
                 $user->name,
-                $attendance->date->year . "年",
+                $attendance->date->year . '年',
                 $attendance->date->format('n月j日'),
                 $attendance->clock_in->format('H:i'),
                 $attendance->clock_out->format('H:i'),
@@ -228,8 +224,6 @@ class AdminStaffTest extends TestCase
         }
     }
 
-
-
     /** 指定月の月初・月末に、勤怠と休憩を作成する。 */
     private function createStaffAttendancesForMonth(User $user, Carbon $month): void
     {
@@ -241,24 +235,24 @@ class AdminStaffTest extends TestCase
             'clock_in' => $date1,
             'clock_out' => $date1->copy()->hour(18),
         ])->breaktimes()->create([
-                    'break_in' => $date1->copy()->hour(12),
-                    'break_out' => $date1->copy()->hour(13),
-                ]);
+            'break_in' => $date1->copy()->hour(12),
+            'break_out' => $date1->copy()->hour(13),
+        ]);
 
         $user->attendances()->create([
             'date' => $date2,
             'clock_in' => $date2,
             'clock_out' => $date2->copy()->hour(22),
         ])->breaktimes()->createMany([
-                    [
-                        'break_in' => $date2->copy()->hour(12),
-                        'break_out' => $date2->copy()->hour(13),
-                    ],
-                    [
-                        'break_in' => $date2->copy()->hour(18),
-                        'break_out' => $date2->copy()->hour(19),
-                    ],
-                ]);
+            [
+                'break_in' => $date2->copy()->hour(12),
+                'break_out' => $date2->copy()->hour(13),
+            ],
+            [
+                'break_in' => $date2->copy()->hour(18),
+                'break_out' => $date2->copy()->hour(19),
+            ],
+        ]);
     }
 
     /** 指定ユーザーの対象月の勤怠が表示されることを確認する。 */
@@ -273,6 +267,7 @@ class AdminStaffTest extends TestCase
             if ($attendance->date->format('Y-m') !== $month->format('Y-m')) {
                 // 別の月の勤怠が混ざっていないことを確認
                 $response->assertDontSee('href="' . url('/attendance/' . $attendance->id) . '"', false);
+
                 continue;
             }
 
@@ -291,9 +286,6 @@ class AdminStaffTest extends TestCase
 
     /**
      * テスト用のユーザー生成メソッド
-     * @param array $userData
-     * @param array $attendanceData
-     * @param array $breakTimesData
      */
     private function createTestUsers(
         array $userData,

@@ -11,11 +11,11 @@ class CheckAdmin
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->user()->admin_status) {
+        if (! auth()->user()->admin_status) {
             abort(403, '管理者権限が必要です。');
         }
 
