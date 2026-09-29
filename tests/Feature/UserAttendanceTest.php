@@ -5,18 +5,18 @@ namespace Tests\Feature;
 use App\Models\Attendance;
 use App\Models\BreakTime;
 use App\Models\User;
-use Tests\TestCase;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class UserAttendanceTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * 認証可能ユーザー
-     * @var User
      */
     protected User $user;
 
@@ -37,43 +37,51 @@ class UserAttendanceTest extends TestCase
     }
 
     /**
-     * ID9 自分が行った勤怠情報が全て表示されている
-     * @return void
+     * 自分が行った勤怠情報が全て表示されている
+     * 勤怠一覧画面に遷移した際に現在の月が表示される
      */
-    public function test_can_get_current_month_attendance_list()
+    public function testCanGetCurrentMonthAttendanceList(): void
     {
-        /**
-         * 1. 勤怠情報が登録されたユーザーにログインする
-         * 2. 勤怠一覧ページを開く
-         * 3. 自分の勤怠情報がすべて表示されていることを確認する         
-         */
+        // 1. 勤怠情報が登録されたユーザーにログインする
+        // 2. 勤怠一覧ページを開く
+        // 3. 自分の勤怠情報がすべて表示されていることを確認する
+        // 現在の月が表示されている
 
         // テスト用勤怠情報生成
-        $now = Carbon::now();
-        $currentMonth = $now->copy();
-        $this->createTestAttendance($currentMonth->copy()->startOfMonth()->setHour(8)->setMinute(45));
-        $this->createTestAttendance($currentMonth->copy()->day(15)->setHour(9)->setMinute(0));
+        $currentStartOfMonth = Carbon::now()->copy()->startOfMonth();
+        $this->createTestAttendance($currentStartOfMonth->copy()->hour(9));
+        $this->createTestAttendance($currentStartOfMonth->copy()->day(15)->hour(9));
+
         // テスト用に休憩時間も生成
         $this->createTestBreakTimes(
             $this->createTestAttendance(
-                $currentMonth->copy()->endOfMonth()->startOfDay()->setHour(9)->setMinute(15)
+                $currentStartOfMonth->copy()->endOfMonth()->startOfDay()->setHour(9)->setMinute(15)
             )
         );
 
         // 2. 勤怠一覧ページを開く
-        $response = $this->actingAs($this->user)->get("/attendance/list");
+        $response = $this->actingAs($this->user)->get('/attendance/list');
 
         // 月毎の表示テスト
-        $this->assertMonthly($currentMonth, $response);
+        $this->assertMonthly($currentStartOfMonth, $response);
     }
 
-    public function test_can_get_previous_month_attendance_list()
+    /**
+     * 「前月」を押下した時に表示月の前月の情報が表示される
+     */
+    public function testCanGetPreviousMonthAttendanceList(): void
     {
+        // 1. 勤怠情報が登録されたユーザーにログインをする
+        // 2. 勤怠一覧ページを開く
+        // 3. 「前月」ボタンを押す
+        // 前月の情報が表示されている
+
         // テスト用勤怠情報生成
         $now = Carbon::now();
         $preMonth = $now->startOfMonth()->subMonth();
         $this->createTestAttendance($preMonth->copy()->startOfMonth()->setHour(8)->setMinute(45));
         $this->createTestAttendance($preMonth->copy()->day(15)->setHour(9)->setMinute(0));
+
         // テスト用に休憩時間も生成
         $this->createTestBreakTimes(
             $this->createTestAttendance(
@@ -88,8 +96,16 @@ class UserAttendanceTest extends TestCase
         $this->assertMonthly($preMonth, $response);
     }
 
-    public function test_can_get_next_month_attendance_list()
+    /**
+     * 「翌月」を押下した時に表示月の前月の情報が表示される
+     */
+    public function testCanGetNextMonthAttendanceList(): void
     {
+        // 1. 勤怠情報が登録されたユーザーにログインをする
+        // 2. 勤怠一覧ページを開く
+        // 3. 「翌月」ボタンを押す
+        // 翌月の情報が表示されている
+
         // テスト用勤怠情報生成
         $now = Carbon::now();
         $nextMonth = $now->startOfMonth()->addMonth();
@@ -111,71 +127,17 @@ class UserAttendanceTest extends TestCase
     }
 
     /**
-     * 月毎の表示物テスト
-     * @param Carbon $datetime
-     * @param mixed $response
+     * 「詳細」を押下すると、その日の勤怠詳細画面に遷移する
+     *
      * @return void
      */
-    private function assertMonthly(Carbon $datetime, $response)
+    public function testCanGetAttendanceDetail()
     {
-        // 期待されたビューかテスト
-        $response->assertViewIs('user.user-attendance-list');
+        // 1. 勤怠情報が登録されたユーザーにログインをする
+        // 2. 勤怠一覧ページを開く
+        // 3. 「詳細」ボタンを押下す"
+        // その日の勤怠詳細画面に遷移する
 
-        /** 期待する月が表示されているかテスト */
-
-        // 実表示テストと、受け渡されたデータ比較テストを行う
-        $response->assertSee($datetime->format('Y/m'));
-        $date = $response->viewData('date');
-        $this->assertEquals($date->format('Y/m'), $datetime->format('Y/m'));
-
-
-        /** 勤怠情報が全て表示されているかテスト */
-
-        // bladeに渡されたデータ取得
-        $formattedAttendanceRecords = $response->viewData('formattedAttendanceRecords');
-
-        // 該当月の勤怠データ取得
-        $monthlyAttendances = $this->user->attendances()
-            ->whereYear('date', $datetime)
-            ->whereMonth('date', $datetime)
-            ->get();
-
-        foreach ($formattedAttendanceRecords as $formattedAttendanceRecord) {
-            $attendance_id = $formattedAttendanceRecord['id'];
-            $record = $monthlyAttendances->find($attendance_id);
-
-            // 比較用に表示フォーマット生成
-            $compareDate = $record->date->isoFormat('MM月DD日(ddd)');
-            $compareClockIn = $record->clock_in->format('H:i');
-            $compareClockOut = $record->clock_out->format('H:i');
-
-            // データ比較テスト
-            $this->assertEquals($formattedAttendanceRecord['date'], $compareDate);
-            $this->assertEquals($formattedAttendanceRecord['clock_in'], $compareClockIn);
-            $this->assertEquals($formattedAttendanceRecord['clock_out'], $compareClockOut);
-            $this->assertEquals($formattedAttendanceRecord['total_time'], $record->totaltime);
-            $this->assertEquals($formattedAttendanceRecord['total_break_time'], $record->total_break_time);
-
-            // 実表示テストも行う
-            $response->assertSeeInOrder([
-                $compareDate,
-                $compareClockIn,
-                $compareClockOut,
-                $record->total_break_time,
-                $record->totaltime,
-            ]);
-
-            // 詳細ボタン押下時の遷移先をテスト
-            $responseDetail = $this->get("/attendance/{$attendance_id}");
-            $responseDetail->assertViewIs('user.user-detail');
-        }
-    }
-    /**
-     * 勤怠詳細テスト
-     * @return void
-     */
-    public function test_can_get_attendance_detail()
-    {
         $attendance = $this->createTestAttendance(Carbon::now()->day(15)->hour(10));
 
         // 休憩を２つ生成
@@ -255,27 +217,81 @@ class UserAttendanceTest extends TestCase
     }
 
     /**
-     * テスト用勤怠データ生成
-     * @param Carbon $baseDatetime
-     * @return Attendance|\Illuminate\Database\Eloquent\Collection<int, Attendance|\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Eloquent\Model
+     * 月毎の表示物テスト
+     *
+     * @param  mixed  $response
      */
-    private function createTestAttendance(Carbon $baseDatetime)
+    private function assertMonthly(Carbon $datetime, $response): void
     {
-        $date = $baseDatetime->copy();
+        // 期待されたビューかテスト
+        $response->assertViewIs('user.user-attendance-list');
+
+        // 期待する月が表示されているかテスト
+        $date = $response->assertSee($datetime->format('Y/m'))->viewData('date');
+        $this->assertEquals($date->format('Y/m'), $datetime->format('Y/m'));
+
+        // bladeに渡されたデータ取得
+        $formattedAttendanceRecords = $response->viewData('formattedAttendanceRecords');
+
+        // 該当月の勤怠データ取得
+        $monthlyAttendances = $this->user->attendances()
+            ->whereYear('date', $datetime)
+            ->whereMonth('date', $datetime)
+            ->get();
+
+        // 勤怠データは一件のみ生成なので最初のレコードを参照する
+        $formattedAttendanceRecord = $formattedAttendanceRecords[0];
+
+        $attendance_id = $formattedAttendanceRecord['id'];
+        $record = $monthlyAttendances->find($attendance_id);
+
+        // 比較用に表示フォーマット生成
+        $compareDate = $record->date->isoFormat('MM月DD日(ddd)');
+        $compareClockIn = $record->clock_in->format('H:i');
+        $compareClockOut = $record->clock_out->format('H:i');
+
+        // データ比較テスト
+        $this->assertEquals($formattedAttendanceRecord['date'], $compareDate);
+        $this->assertEquals($formattedAttendanceRecord['clock_in'], $compareClockIn);
+        $this->assertEquals($formattedAttendanceRecord['clock_out'], $compareClockOut);
+        $this->assertEquals($formattedAttendanceRecord['total_time'], $record->totaltime);
+        $this->assertEquals($formattedAttendanceRecord['total_break_time'], $record->total_break_time);
+
+        // 実表示テストも行う
+        $response->assertSeeInOrder([
+            $compareDate,
+            $compareClockIn,
+            $compareClockOut,
+            $record->total_break_time,
+            $record->totaltime,
+        ]);
+
+        // 詳細ボタン押下時の遷移先をテスト
+        $responseDetail = $this->get("/attendance/{$attendance_id}");
+        $responseDetail->assertViewIs('user.user-detail');
+    }
+
+    /**
+     * テスト用勤怠データ生成
+     *
+     * @return Attendance|Collection<int, Attendance|Model>|Model
+     */
+    private function createTestAttendance(Carbon $baseDatetime): Attendance
+    {
         return Attendance::factory()->create([
             'user_id' => $this->user->id,
-            'date' => $date->copy(),
-            'clock_in' => $date->copy()->setHour(9),
-            'clock_out' => $date->copy()->setHour(19),
+            'date' => $baseDatetime,
+            'clock_in' => $baseDatetime->copy()->setHour(9),
+            'clock_out' => $baseDatetime->copy()->setHour(19),
         ]);
     }
 
     /**
      * テスト用休憩データ生成
-     * @param Attendance $attendance
-     * @return BreakTime|\Illuminate\Database\Eloquent\Collection<int, BreakTime|\Illuminate\Database\Eloquent\Model>|\Illuminate\Database\Eloquent\Model
+     *
+     * @return BreakTime|Collection<int, BreakTime|Model>|Model
      */
-    private function createTestBreakTimes(Attendance $attendance)
+    private function createTestBreakTimes(Attendance $attendance): BreakTime
     {
         return BreakTime::factory()->create([
             'attendance_id' => $attendance->id,

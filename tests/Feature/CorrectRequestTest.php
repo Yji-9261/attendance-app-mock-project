@@ -2,22 +2,39 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attendance;
 use App\Models\Application;
+use App\Models\Attendance;
 use App\Models\User;
-use Tests\TestCase;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class CorrectRequestTest extends TestCase
 {
     use RefreshDatabase;
 
+    const DATE = '2026-01-01';
+
+    const CLOCK_IN = '09:00';
+
+    const CLOCK_OUT = '18:00';
+
+    const BREAK_IN = '12:00';
+
+    const BREAK_OUT = '13:00';
+
+    const NEW_CLOCK_IN = '10:00';
+
+    const NEW_CLOCK_OUT = '19:00';
+
+    const NEW_BREAK_IN = '12:30';
+
+    const NEW_BREAK_OUT = '13:30';
+
+    const COMMENT = '備考';
+
     /**
      * 認証可能ユーザー
-     * @var User
      */
     protected User $user;
 
@@ -25,12 +42,11 @@ class CorrectRequestTest extends TestCase
 
     protected Attendance $attendance;
 
-    protected array $postData;
-
-
     protected function setUp(): void
     {
         parent::setUp();
+
+        Carbon::setTestNow(self::DATE);
 
         // 一般ユーザー登録
         $this->user = User::factory()->create();
@@ -40,40 +56,22 @@ class CorrectRequestTest extends TestCase
         // 管理者ユーザー登録
         $this->admin = User::factory()
             ->create([
-                'admin_status' => true
+                'admin_status' => true,
             ]);
 
-        // 勤怠データ登録
-        Carbon::setTestNow(Carbon::parse('2026-09-13 10:00:00'));
-        $date = Carbon::parse('2026-09-01 09:00:00');
+        // 勤怠レコード作成
+        $this->attendance = $this->user
+            ->attendances()
+            ->create([
+                'date' => self::DATE,
+                'clock_in' => self::CLOCK_IN,
+                'clock_out' => self::CLOCK_OUT,
+            ]);
 
-        $attendance = $this->user->attendances()->create([
-            'date' => $date->day(1)->hour(9),
-            'clock_in' => $date,
-            'clock_out' => $date->copy()->hour(18),
+        $this->attendance->breaktimes()->create([
+            'break_in' => self::BREAK_IN,
+            'break_out' => self::BREAK_OUT,
         ]);
-        $attendance->breaktimes()->create([
-            'break_in' => $date->copy()->hour(12),
-            'break_out' => $date->copy()->hour(13),
-        ]);
-        $this->attendance = $attendance;
-
-        // ポストデータ
-        $this->postData = [
-            'new_clock_in' => $attendance->clock_in->format('H:i'),
-            'new_clock_out' => $attendance->clock_out->format('H:i'),
-
-            // new_break_in/new_break_outは配列形式で渡す
-            'new_break_in' => $attendance->breaktimes->map(function ($record) {
-                return $record->break_in->format('H:i');
-            })->toArray(),
-
-            'new_break_out' => $attendance->breaktimes->map(function ($record) {
-                return $record->break_out->format('H:i');
-            })->toArray(),
-
-            'comment' => '備考',
-        ];
     }
 
     protected function tearDown(): void
@@ -84,98 +82,82 @@ class CorrectRequestTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * 出勤時間が退勤時間より後になっている場合、エラーメッセージが表示される
-     * @return void
-     */
-    public function test_expected_validation_message_for_clock_in_after_clock_out()
-    {
-        // 勤怠詳細アクセス確認
-        $response = $this->get("/attendance/{$this->attendance->id}");
-        $response->assertViewIs('user.user-detail');
+    private function postAttendanceUpdate(
+        $newClockIn = self::NEW_CLOCK_IN,
+        $newClockOut = self::NEW_CLOCK_OUT,
+        $newBreakIn = self::NEW_BREAK_IN,
+        $newBreakOut = self::NEW_BREAK_OUT,
+        $comment = self::COMMENT,
+    ) {
+        // ポストデータ
+        $postRequest = [
+            'new_clock_in' => $newClockIn,
+            'new_clock_out' => $newClockOut,
+            'new_break_in' => [$newBreakIn],
+            'new_break_out' => [$newBreakOut],
+            'comment' => $comment,
+        ];
 
-        // ポストリクエストを変更
-        // 出勤時間より早くする
-        $this->postData['new_clock_in'] =
-            $this->attendance
-                ->clock_out
-                ->copy()
-                ->addHour()
-                ->format('H:i');
-
-        $response = $this->post("/attendance/{$this->attendance->id}", $this->postData);
-        $response->assertSessionHasErrors([
-            'new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です'
-        ]);
+        return $this->post("/attendance/{$this->attendance->id}", $postRequest);
     }
 
+    /**
+     * 出勤時間が退勤時間より後になっている場合、エラーメッセージが表示される
+     *
+     * @return void
+     */
+    public function testExpectedValidationMessageForClockInAfterClockOut()
+    {
+        // 退勤時間よりも早く設定する
+        $this->postAttendanceUpdate(newClockIn: '23:59')
+            ->assertSessionHasErrors([
+                'new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です',
+            ]);
+    }
 
     /**
      * 休憩開始時間が退勤時間より後になっている場合、エラーメッセージが表示される
+     *
      * @return void
      */
-    public function test_expected_validation_message_for_break_in_after_clock_out()
+    public function testExpectedValidationMessageForBreakInAfterClockOut()
     {
-        // ポストリクエストを変更
-        // 出勤時間より早くする
-        $this->postData['new_break_in'][0] =
-            $this->attendance->
-                clock_out
-                ->copy()
-                ->addHour()
-                ->format('H:i');
-
-        $response = $this->post("/attendance/{$this->attendance->id}", $this->postData);
-
-        $response->assertSessionHasErrors([
-            'new_break_in.0' => '休憩時間が不適切な値です'
-        ]);
+        $this->postAttendanceUpdate(newBreakIn: '23:59')
+            ->assertSessionHasErrors([
+                'new_break_in.0' => '休憩時間が不適切な値です',
+            ]);
     }
 
     /**
      * 休憩終了時間が退勤時間より後になっている場合、エラーメッセージが表示される
+     *
      * @return void
      */
-    public function test_expected_validation_message_for_break_out_after_clock_out()
+    public function testExpectedValidationMessageForBreakOutAfterClockOut()
     {
-        // ポストリクエストを変更
-        // 出勤時間より早くする
-        $this->postData['new_break_out'][0] =
-            $this->attendance->
-                clock_out
-                ->copy()
-                ->addHour()
-                ->format('H:i');
-
-        $response = $this->post("/attendance/{$this->attendance->id}", $this->postData);
-
-        $response->assertSessionHasErrors([
-            'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な時間です'
-        ]);
+        $this->postAttendanceUpdate(newBreakOut: '23:59')
+            ->assertSessionHasErrors([
+                'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な値です',
+            ]);
     }
 
     /**
      * 備考欄が未入力の場合のエラーメッセージが表示される
+     *
      * @return void
      */
-    public function test_expected_validation_message_for_comment_required()
+    public function testExpectedValidationMessageForCommentRequired()
     {
-        // ポストリクエストを変更
-        // 出勤時間より早くする
-        $this->postData['comment'] = '';
-
-        $response = $this->post("/attendance/{$this->attendance->id}", $this->postData);
-
-        $response->assertSessionHasErrors([
-            'comment' => '備考を記入してください'
-        ]);
+        $this->postAttendanceUpdate(comment: '')
+            ->assertSessionHasErrors([
+                'comment' => '備考を記入してください',
+            ]);
     }
 
     /**
      * 修正申請処理が実行される
-     * @return void
      */
-    public function test_user_can_submit_correction_request_and_admin_can_view_it(): void
+    public function testUserCanSubmitCorrectionRequestAndAdminCanViewIt(): void
     {
         /**
          * 1. 勤怠情報が登録されたユーザーにログインをする
@@ -189,66 +171,66 @@ class CorrectRequestTest extends TestCase
             ->assertOk()
             ->assertViewIs('user.user-detail');
 
-        $application = $this->submitCorrectionRequest($this->attendance, '打刻時刻を訂正します');
-        $date = $this->attendance->date->toDateString();
+        $this->postAttendanceUpdate()
+            ->assertSessionHasNoErrors()
+            ->assertRedirect("/attendance/{$this->attendance->id}");
+        $application = $this->attendance->applications()->firstOrFail();
 
         $this->assertDatabaseHas('applications', [
             'id' => $application->id,
             'attendance_id' => $this->attendance->id,
-            'new_clock_in' => "$date 09:30:00",
-            'new_clock_out' => "$date 18:30:00",
-            'comment' => '打刻時刻を訂正します',
+            'new_clock_in' => Carbon::parse(self::DATE . ' ' . self::NEW_CLOCK_IN)->toDateTimeString(),
+            'new_clock_out' => Carbon::parse(self::DATE . ' ' . self::NEW_CLOCK_OUT)->toDateTimeString(),
+            'comment' => self::COMMENT,
             'approval_status' => '承認待ち',
             'application_date' => Carbon::now()->toDateTimeString(),
         ]);
         $this->assertSame(1, $application->breakapplications()->count());
         $this->assertDatabaseHas('break_applications', [
             'application_id' => $application->id,
-            'break_in' => "$date 12:30:00",
-            'break_out' => "$date 13:30:00",
+            'break_in' => Carbon::parse(self::DATE . ' ' . self::NEW_BREAK_IN)->toDateTimeString(),
+            'break_out' => Carbon::parse(self::DATE . ' ' . self::NEW_BREAK_OUT)->toDateTimeString(),
         ]);
 
         // 承認前は元の勤怠・休憩が変更されない
         $this->assertDatabaseHas('attendances', [
             'id' => $this->attendance->id,
-            'clock_in' => "$date 09:00:00",
-            'clock_out' => "$date 18:00:00",
+            'clock_in' => Carbon::parse(self::DATE . ' ' . self::CLOCK_IN)->toDateTimeString(),
+            'clock_out' => Carbon::parse(self::DATE . ' ' . self::CLOCK_OUT)->toDateTimeString(),
         ]);
         $this->assertSame(1, $this->attendance->breaktimes()->count());
         $this->assertDatabaseHas('break_times', [
             'attendance_id' => $this->attendance->id,
-            'break_in' => "$date 12:00:00",
-            'break_out' => "$date 13:00:00",
+            'break_in' => Carbon::parse(self::DATE . ' ' . self::BREAK_IN)->toDateTimeString(),
+            'break_out' => Carbon::parse(self::DATE . ' ' . self::BREAK_OUT)->toDateTimeString(),
         ]);
 
-        // 3. 管理者ユーザーで承認画面と申請一覧画面を確認する 
+        // 3. 管理者ユーザーで承認画面と申請一覧画面を確認する
         $this->actingAs($this->admin);
         $this->get("/stamp_correction_request/approve/{$application->id}")
             ->assertOk()
             ->assertViewIs('admin.admin-application-detail')
             ->assertSee($this->user->name)
-            ->assertSee('打刻時刻を訂正します')
-            ->assertSee('9:30')
-            ->assertSee('18:30')
-            ->assertSee('12:30')
-            ->assertSee('13:30');
+            ->assertSee(self::COMMENT)
+            ->assertSee(Carbon::parse(self::NEW_CLOCK_IN)->format('G:i'))
+            ->assertSee(Carbon::parse(self::NEW_CLOCK_OUT)->format('G:i'))
+            ->assertSee(Carbon::parse(self::NEW_BREAK_IN)->format('H:i'))
+            ->assertSee(Carbon::parse(self::NEW_BREAK_OUT)->format('H:i'));
 
         $response = $this->get('/stamp_correction_request/list');
         $response->assertOk()->assertViewIs('admin.admin-application-list');
         $this->assertTabContainsRequests($response->getContent(), 'content1', [$application], true);
-
     }
 
     /**
      * ID11「承認待ち」にログインユーザーが行った申請が全て表示されていること
-     * @return void
      */
-    public function test_pending_tab_displays_all_own_correction_requests(): void
+    public function testPendingTabDisplaysAllOwnCorrectionRequests(): void
     {
         /**
          * 1. 勤怠情報が登録されたユーザーにログインをする
          * 2. 勤怠詳細を修正し保存処理をする
-         * 3. 申請一覧画面を確認する         
+         * 3. 申請一覧画面を確認する
          * * result. 申請一覧に自分の申請が全て表示されている
          */
         $applications = $this->submitRequestsForUser($this->user);
@@ -263,21 +245,18 @@ class CorrectRequestTest extends TestCase
         foreach ($otherApplications as $application) {
             $response->assertDontSee($application->comment);
         }
-
-
     }
 
     /**
      * ID11「承認済み」に管理者が承認した修正申請が全て表示されている
-     * @return void
      */
-    public function test_approved_tab_displays_all_own_approved_requests(): void
+    public function testApprovedTabDisplaysAllOwnApprovedRequests(): void
     {
         /**
          *1. 勤怠情報が登録されたユーザーにログインをする
          *2. 勤怠詳細を修正し保存処理をする
-         *3. 申請一覧画面を開く 
-         *4. 管理者が承認した修正申請が全て表示されていることを確認       
+         *3. 申請一覧画面を開く
+         *4. 管理者が承認した修正申請が全て表示されていることを確認
          * result. 承認済みに管理者が承認した申請が全て表示されている
          */
         $applications = $this->submitRequestsForUser($this->user);
@@ -303,20 +282,17 @@ class CorrectRequestTest extends TestCase
         foreach ($otherApplications as $application) {
             $response->assertDontSee($application->comment);
         }
-
-
     }
 
     /**
      * ID11 各申請の「詳細」を押下すると勤怠詳細画面に遷移する
-     * @return void
      */
-    public function test_each_request_detail_link_opens_its_attendance(): void
+    public function testEachRequestDetailLinkOpensItsAttendance(): void
     {
         /**
          * 1. 勤怠情報が登録されたユーザーにログインをする
          * 2. 勤怠詳細を修正し保存処理をする
-         * 3. 申請一覧画面を開く 
+         * 3. 申請一覧画面を開く
          * 4. 「詳細」ボタンを押す
          * result. 勤怠詳細画面に遷移する
          */
@@ -328,13 +304,14 @@ class CorrectRequestTest extends TestCase
         foreach ($applications as $application) {
             $this->get("/application/{$application->id}")
                 ->assertRedirect("/attendance/{$application->attendance_id}");
+
+            $attendance = $application->attendance;
             $this->get("/attendance/{$application->attendance_id}")
                 ->assertOk()
                 ->assertViewIs('user.user-detail')
                 ->assertViewHas('data', fn($data) => (int) $data['id'] === $application->attendance_id)
-                ->assertSee($application->comment);
+                ->assertSee($attendance->comment);
         }
-
 
     }
 
@@ -354,7 +331,11 @@ class CorrectRequestTest extends TestCase
         return $attendance->applications()->firstOrFail();
     }
 
-    /** 別日の勤怠に対して3件申請し、「全て表示」を検証できるようにする。 */
+    /**
+     * 別日の勤怠に対して3件申請し、「全て表示」を検証できるようにする。
+     *
+     * @return Application[]
+     */
     private function submitRequestsForUser(User $user): array
     {
         $this->actingAs($user);
@@ -365,6 +346,7 @@ class CorrectRequestTest extends TestCase
                 'date' => $date,
                 'clock_in' => $date->copy()->hour(9),
                 'clock_out' => $date->copy()->hour(18),
+                'comment' => 'テスト'
             ]);
             $applications[] = $this->submitCorrectionRequest($attendance, "ユーザー{$user->id}の{$day}日分の修正");
         }
@@ -375,7 +357,7 @@ class CorrectRequestTest extends TestCase
     /** ページ全体ではなく、指定タブの申請行・詳細リンクを検証する。 */
     private function assertTabContainsRequests(string $html, string $tabId, array $applications, bool $admin = false): void
     {
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         $previous = libxml_use_internal_errors(true);
         try {
             $document->loadHTML('<?xml encoding="UTF-8">' . $html);
@@ -399,5 +381,4 @@ class CorrectRequestTest extends TestCase
         }
         $this->assertEqualsCanonicalizing($expectedUrls, $actualUrls);
     }
-
 }

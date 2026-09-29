@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BreakTime extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'attendance_id',
         'break_in',
@@ -19,6 +21,11 @@ class BreakTime extends Model
         'break_out' => 'datetime',
     ];
 
+    /**
+     * 勤怠レコードとのリレーション
+     *
+     * @return BelongsTo
+     */
     public function attendance()
     {
         return $this->belongsTo(Attendance::class);

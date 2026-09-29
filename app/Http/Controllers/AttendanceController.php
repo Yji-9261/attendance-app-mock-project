@@ -3,39 +3,48 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
-
-use Illuminate\Http\Request;
-
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 
 class AttendanceController extends Controller
 {
     /**
      * レポート集計期間は6ヶ月
+     *
      * @var int
      */
     public const REPORT_MONTHS = 6;
 
     /**
      * 通常勤務時間、分単位
+     *
      * @var int
      */
     public const STANDARD_WORK_MINUTES = 8 * 60;
 
     /**
      * 勤務開始時間、この時間より遅れて出勤打刻で遅刻としてカウント
+     *
      * @var int
      */
     public const START_WORK_HOUR = 9;
 
     /**
      * 勤務終了時間、この時間より早くに退勤打刻で遅刻としてカウント
+     *
      * @var int
      */
     public const END_WORK_HOUR = 18;
 
     /**
      * 長時間労働。分単位。この時間より勤務時間がオーバーするとカウント
+     *
      * @var int
      */
     public const OVER_WORK_MINUTES = 10 * 60;
@@ -43,33 +52,50 @@ class AttendanceController extends Controller
     /**
      * 勤怠一覧画面
      * GET(/attendance/list)
+     *
+     * @param  Request  $request  リクエスト
+     * @return Factory|View
      */
     public function index(Request $request)
     {
-        // リクエストクエリがないなら現在日付を使用する 
+        // リクエストクエリがないなら現在日付を使用する
         $date = Carbon::now();
-        if ($request->has("date")) {
-            $date = Carbon::parse($request->query("date"));
+        if ($request->has('date')) {
+            $date = Carbon::parse($request->query('date'));
         }
 
-        // 月内の勤怠レコードを取得し、blade受け渡し用にデータ整形
-        $s = $date->copy()->startOfMonth()->toDateTime();
-        $e = $date->copy()->endOfMonth()->toDateTime();
-        $formattedAttendanceRecords = auth()->user()
+        // 月内の開始日と終了日取得
+        $startOfMonth = $date->copy()->startOfMonth();
+        $endOfMonth = $date->copy()->endOfMonth();
+
+        // 月内の勤怠レコードを年月日文字列をKeyとしてコレクションを生成
+        $monthlyRecords = $request
+            ->user()
             ->attendances()
             ->with('breaktimes')
-            ->whereBetween('date', [$s, $e])
+            ->whereBetween('date', [
+                $startOfMonth->toDateTime(),
+                $endOfMonth->toDateTime(),
+            ])
             ->get()
-            ->map(function ($attendance) {
-                return [
-                    'id' => $attendance->id,
-                    'date' => $attendance->date->isoFormat('MM月DD日(ddd)'),
-                    'clock_in' => $attendance->clock_in->format('H:i'),
-                    'clock_out' => $attendance->clock_out?->format('H:i'),
-                    'total_time' => $attendance->total_time,
-                    'total_break_time' => $attendance->total_break_time
-                ];
-            });
+            ->keyBy(fn($attendance) => $attendance->date->toDateString());
+
+        // blade受け渡し用に月内の勤怠レコードを整形して生成
+        $formattedAttendanceRecords =
+            collect(CarbonPeriod::between($startOfMonth, $endOfMonth))
+                ->map(function ($dateTime) use ($monthlyRecords) {
+                    // 日付に対する勤怠レコードを取得する
+                    $attendance = $monthlyRecords->get($dateTime->toDateString());
+
+                    return [
+                        'id' => $attendance?->id,
+                        'date' => $dateTime->isoFormat('MM月DD日(ddd)'),
+                        'clock_in' => $attendance?->clock_in->format('H:i'),
+                        'clock_out' => $attendance?->clock_out?->format('H:i'),
+                        'total_time' => $attendance?->total_time,
+                        'total_break_time' => $attendance?->total_break_time,
+                    ];
+                });
 
         return view('user.user-attendance-list', [
             'date' => $date,
@@ -82,11 +108,14 @@ class AttendanceController extends Controller
     /**
      * 出勤登録画面
      * GET(/attendance)
+     *
+     * @return Factory|View
      */
     public function create()
     {
         $now = Carbon::now();
-        return view("user.attendance-register", [
+
+        return view('user.attendance-register', [
             'user' => auth()->user(),
             'formattedDate' => $now->isoFormat('YYYY年MM月DD日(ddd)'),
 
@@ -98,14 +127,22 @@ class AttendanceController extends Controller
     /**
      * 出勤登録画面
      * POST(/attendance)
+     *
+     * @param  Request  $request  リクエスト
+     * @return RedirectResponse|Redirector
      */
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         // 現在日付の勤怠情報を取得する
         $now = Carbon::now();
-        $attendance = $user->attendances()->whereDate('date', $now)->first();
+
+        // ここで取得する$attendanceは日付を跨いでページ更新すると
+        // nullが返る可能性があることを考慮する
+        $attendance = $user->attendances()
+            ->whereDate('date', $now)
+            ->first();
 
         if (
             $request->input('action') === 'clock_in' &&
@@ -115,36 +152,37 @@ class AttendanceController extends Controller
                 'clock_in' => $now,
                 'date' => $now,
             ]);
-        } else if (
+        } elseif (
             $request->input('action') === 'clock_out' &&
             $user->attendanceStatus === '出勤中'
         ) {
-            // ページ未更新で日付を跨いだ場合 $attendanceがnullになることあり
             $attendance?->update(['clock_out' => $now]);
-        } else if (
+        } elseif (
             $request->input('action') === 'break_in' &&
             $user->attendanceStatus === '出勤中'
         ) {
-            // ページ未更新で日付を跨いだ場合 $attendanceがnullになることあり
             $attendance?->breaktimes()
                 ->create(['break_in' => $now]);
-        } else if (
+        } elseif (
             $request->input('action') === 'break_out' &&
             $user->attendanceStatus === '休憩中'
         ) {
-            // ページ未更新で日付を跨いだ場合 $attendanceがnullになることあり
-            // 取得したbreaktimesはnullになることはない想定だが念の為チェック
             $attendance?->breaktimes()
                 ->latest('id')
                 ->first()?->update(['break_out' => $now]);
         }
+
         return redirect('/attendance');
     }
 
     /**
      * 詳細画面
-     * GET('/attendance/{id}')
+     * GET('/attendance/{attendance}')
      * 一般・管理者共通の勤怠詳細画面
+     *
+     * @param  Request  $request  リクエスト
+     * @param  Attendance  $attendance  勤怠レコード
+     * @return Factory|View
      */
     public function show(Request $request, Attendance $attendance)
     {
@@ -158,6 +196,9 @@ class AttendanceController extends Controller
     /**
      * レポート画面表示
      * GET(/attendance/report)
+     *
+     * @param  Request  $request  リクエスト
+     * @return Factory|View
      */
     public function report(Request $request)
     {
@@ -171,6 +212,7 @@ class AttendanceController extends Controller
                 // キーには'Y-m'形式の年月文字列が入る
                 // blade表示用に'month'として月のみを格納する
                 $summary['month'] = Carbon::parse($yearMonth)->month;
+
                 return $summary;
             })->values();
 
@@ -180,6 +222,7 @@ class AttendanceController extends Controller
         $total_days = $summaries->sum('total_day');
         $avg_work_minutes = $total_days === 0
             ? 0 : $total_work_minutes / $total_days;
+
         $summary = [
             'total_work_minutes' => $total_work_minutes,
             'total_overtime_minutes' => $total_overtime_minutes,
@@ -206,13 +249,17 @@ class AttendanceController extends Controller
                 'late_count' => $anomalies['late_count'],
                 'early_leave_count' => $anomalies['early_leave_count'],
                 'long_work_count' => $anomalies['long_work_count'],
-            ]
+            ],
         ]);
     }
 
     /**
      * 出勤登録画面
-     * GET(/attendance/{id})
+     * GET(/attendance/{attendance})
+     *
+     * @param  Request  $request  リクエスト
+     * @param  Attendance  $attendance  勤怠レコード
+     * @return Factory|View
      */
     private function showByUser(Request $request, Attendance $attendance)
     {
@@ -236,24 +283,28 @@ class AttendanceController extends Controller
             'user' => $attendance->user,
             'data' => [
                 'id' => $attendance->id,
-                'year' => $attendance->date->year . "年",
+                'year' => $attendance->date->year . '年',
                 'date' => $attendance->date->format('n月j日'),
                 'application' => $application,
                 'breaks' => $breaks,
                 'clock_in' => $attendance->clock_in->format('H:i'),
                 'clock_out' => $attendance->clock_out?->format('H:i'),
-                'comment' => $application?->comment,
-            ]
+                'comment' => $attendance?->comment,
+            ],
         ]);
     }
 
     /**
      * 勤怠詳細画面
-     * GET(/attendance/{id})
+     * GET(/attendance/{attendance})
+     *
+     * @param  Request  $request  リクエスト
+     * @param  Attendance  $attendance  勤怠レコード
+     * @return Factory|View
      */
     private function showByAdmin(Request $request, Attendance $attendance)
     {
-        // 承認待ち中は他の修正申請はない設計のためfirstで問題なし
+        // 承認待ち中の勤怠は修正ボタンを表示させないための処理
         $application = $attendance->applications()
             ->where('approval_status', '承認待ち')
             ->first();
@@ -263,12 +314,12 @@ class AttendanceController extends Controller
             'user' => $attendance->user,
             'attendanceRecord' => [
                 'id' => $attendance->id,
-                'year' => $attendance->date->year . "年",
+                'year' => $attendance->date->year . '年',
                 'date' => $attendance->date->format('n月j日'),
-                'comment' => $application?->comment,
-                'approval_status' => $application?->approval_status,
+                'comment' => $attendance?->comment,
                 'clock_in' => $attendance->clock_in->format('H:i'),
                 'clock_out' => $attendance->clock_out?->format('H:i'),
+                'application' => $application,
 
                 // blade側でis_arrayしているため配列に変換
                 'breaks' => $attendance->breaktimes->map(function ($breakTime) {
@@ -283,7 +334,9 @@ class AttendanceController extends Controller
 
     /**
      * ６ヶ月分の月次勤怠レコード取得
-     * @return \Illuminate\Database\Eloquent\Collection<int|string, \Illuminate\Database\Eloquent\Collection<int|string, mixed>>
+     *
+     * @param  Request  $request  リクエスト
+     * @return Collection<int|string, Collection<int|string, mixed>>
      */
     private function getSixMonthAttendances(Request $request)
     {
@@ -314,60 +367,27 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 休憩を除いた実労働時間を分単位で算出
-     * @param mixed $attendance 勤怠レコード
-     * @return int
-     */
-    private function calculateWorkMinutes($attendance)
-    {
-        // 退勤打刻前の可能性がある。その場合の勤務時間は0とする
-        if (!$attendance->clock_out) {
-            return 0;
-        }
-
-        $workMinutes = (int) $attendance->clock_in->diffInMinutes($attendance->clock_out);
-        return $workMinutes - $this->calculateBreakMinutes($attendance);
-    }
-
-    /**
-     * 1日単位の休憩時間算出
-     * @param mixed $attendance　勤怠レコード
-     * @return int
-     */
-    private function calculateBreakMinutes($attendance)
-    {
-        return
-            $attendance->breaktimes->sum(function ($breakTime) {
-                // 休憩終了打刻前の可能性がある。その場合の休憩時間は0とする
-                if (!$breakTime->break_out) {
-                    return 0;
-                }
-                return (int) $breakTime->break_in
-                    ->diffInMinutes($breakTime->break_out);
-            });
-    }
-
-    /**
      * 残業時間を分単位で算出
-     * @param mixed $workMinutes 労働時間(分単位)
-     * @return int
+     *
+     * @param  int  $workMinutes  実勤務時間(分単位)
      */
-    private function calculateOvertimeMinutes($workMinutes)
+    private function calculateOvertimeMinutes(int $workMinutes): int
     {
         // 1日480分(8時間)を超えた分の時間を残業とする
         $overTime = $workMinutes - self::STANDARD_WORK_MINUTES;
         if ($overTime <= 0) {
             return 0;
         }
+
         return $overTime;
     }
 
     /**
      * 遅刻した回数を算出
-     * @param mixed $attendance 勤怠レコード
-     * @return int
+     *
+     * @param  Attendance  $attendance  勤怠レコード
      */
-    private function countLate($attendance)
+    private function countLate(Attendance $attendance): int
     {
         // 出勤時間が9時超過の場合遅刻とする
         $standardClockIn = $attendance->clock_in
@@ -381,10 +401,10 @@ class AttendanceController extends Controller
 
     /**
      * 早退した回数を算出
-     * @param mixed $attendance 勤怠レコード
-     * @return int
+     *
+     * @param  Attendance  $attendance  勤怠レコード
      */
-    private function countEarlyLeave($attendance)
+    private function countEarlyLeave(Attendance $attendance): int
     {
         // 退勤打刻前は0とする
         if (!$attendance->clock_out) {
@@ -400,12 +420,13 @@ class AttendanceController extends Controller
         return $standardClockOut->gt($attendance->clock_out)
             ? 1 : 0;
     }
+
     /**
      * 長時間労働回数を算出
-     * @param mixed $workMinutes 労働時間(分単位)
-     * @return int
+     *
+     * @param  int  $workMinutes  実勤務時間(分単位)
      */
-    private function countLongWork($workMinutes)
+    private function countLongWork(int $workMinutes): int
     {
         // 実労働時間10時間超で長時間労働とする
         return $workMinutes > self::OVER_WORK_MINUTES
@@ -414,7 +435,8 @@ class AttendanceController extends Controller
 
     /**
      * 月次レポートを算出
-     * @param mixed $monthlyAttendances 月毎の勤怠レコード
+     *
+     * @param  mixed  $monthlyAttendances  月毎の勤怠レコード
      * @return array{"early_leave_count": int, "late_count": int, "long_work_count": int, "overtime_minutes": int, "total_day": int, "work_minutes": int}
      */
     private function calculateMonthlyAttendanceReport($monthlyAttendances)
@@ -429,7 +451,7 @@ class AttendanceController extends Controller
         ];
 
         foreach ($monthlyAttendances as $attendance) {
-            $workMinutes = $this->calculateWorkMinutes($attendance);
+            $workMinutes = $attendance->calculateWorkMinutes();
             $report['work_minutes'] += $workMinutes;
             $report['overtime_minutes'] += $this->calculateOvertimeMinutes($workMinutes);
             $report['late_count'] += $this->countLate($attendance);
@@ -441,6 +463,7 @@ class AttendanceController extends Controller
                 $report['total_day'] += 1;
             }
         }
+
         return $report;
     }
 }

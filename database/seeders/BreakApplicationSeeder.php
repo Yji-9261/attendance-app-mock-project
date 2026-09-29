@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Application;
-
 use Illuminate\Database\Seeder;
 
 class BreakApplicationSeeder extends Seeder

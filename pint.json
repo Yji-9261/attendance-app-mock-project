@@ -1,0 +1,13 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "php_unit_method_casing": false,
+                "concat_space": {
+            "spacing": "one"
+        }
+    },
+    "exclude":[
+        "app/Console",
+        "storage"
+    ]
+}

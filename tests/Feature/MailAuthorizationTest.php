@@ -13,7 +13,7 @@ class MailAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     /** 会員登録後、登録したメールアドレス宛に認証メールが送信される。 */
-    public function test_mail_is_sent_successfully(): void
+    public function testMailIsSentSuccessfully(): void
     {
         Notification::fake();
 
@@ -39,7 +39,7 @@ class MailAuthorizationTest extends TestCase
     }
 
     /** 認証誘導画面に、メール認証サイトを開くリンクが表示される。 */
-    public function test_verification_notice_links_to_mail_site(): void
+    public function testVerificationNoticeLinksToMailSite(): void
     {
         $user = User::factory()->unverified()->create();
 
@@ -50,7 +50,7 @@ class MailAuthorizationTest extends TestCase
             ->assertSeeText('登録していただいたメールアドレスに認証メールを送付しました。');
 
         // 外部のMailpit画面への遷移はFeatureテストでは実行せず、リンクを検証する。
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         $previous = libxml_use_internal_errors(true);
         try {
             $document->loadHTML('<?xml encoding="UTF-8">' . $response->getContent());
@@ -66,7 +66,7 @@ class MailAuthorizationTest extends TestCase
     }
 
     /** メール内の認証URLで認証を完了すると、勤怠登録画面に遷移する。 */
-    public function test_verified_user_is_redirected_to_attendance_page(): void
+    public function testVerifiedUserIsRedirectedToAttendancePage(): void
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();

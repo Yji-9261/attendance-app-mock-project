@@ -4,13 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\User;
-use Tests\TestCase;
-
-use Illuminate\Testing\TestResponse;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
 class AdminAttendanceTest extends TestCase
 {
@@ -18,7 +15,6 @@ class AdminAttendanceTest extends TestCase
 
     /**
      * 認証可能ユーザー
-     * @var User
      */
     protected User $admin;
 
@@ -47,7 +43,7 @@ class AdminAttendanceTest extends TestCase
      * ID12 その日になされた全ユーザーの勤怠情報が正確に確認できる
      * ID12 遷移した際に現在の日付が表示される
      */
-    public function test_can_view_all_users_attendance_for_today(): void
+    public function testCanViewAllUsersAttendanceForToday(): void
     {
         /**
          * 1. 管理者ユーザーにログインする
@@ -72,7 +68,7 @@ class AdminAttendanceTest extends TestCase
     /**
      * ID12 「前日」を押下した時に前の日の勤怠情報が表示される
      */
-    public function test_can_view_all_users_attendance_for_yesterday(): void
+    public function testCanViewAllUsersAttendanceForYesterday(): void
     {
         /**
          * 1. 管理者ユーザーにログインする
@@ -98,13 +94,12 @@ class AdminAttendanceTest extends TestCase
             ->assertViewIs('admin.admin-attendance-list');
         $this->assertAttendanceListForDate($response, $date);
 
-
     }
 
     /**
      * ID12 「翌日」を押下した時に翌日の勤怠情報が表示される
      */
-    public function test_can_view_all_users_attendance_for_tomorrow(): void
+    public function testCanViewAllUsersAttendanceForTomorrow(): void
     {
         /**
          * 1. 管理者ユーザーにログインする
@@ -134,7 +129,7 @@ class AdminAttendanceTest extends TestCase
     /**
      * ID13 勤怠詳細画面に表示されるデータが選択したものになっている
      */
-    public function test_can_view_attendance_detail(): void
+    public function testCanViewAttendanceDetail(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -154,7 +149,7 @@ class AdminAttendanceTest extends TestCase
 
             $expected = [
                 $attendance->user->name,
-                $attendance->date->year . "年",
+                $attendance->date->year . '年',
                 $attendance->date->format('n月j日'),
                 $attendance->clock_in->format('H:i'),
                 $attendance->clock_out->format('H:i'),
@@ -169,11 +164,10 @@ class AdminAttendanceTest extends TestCase
         }
     }
 
-
     /**
      * ID13 出勤時間が退勤時間より後になっている場合、エラーメッセージが表示される
      */
-    public function test_shows_validation_error_when_clock_in_is_after_clock_out(): void
+    public function testShowsValidationErrorWhenClockInIsAfterClockOut(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -196,8 +190,8 @@ class AdminAttendanceTest extends TestCase
         // 保存処理をする
         $response = $this->from("/attendance/{$attendance->id}")
             ->post("/attendance/{$attendance->id}", [
-                "new_clock_in" => '19:00',
-                "new_clock_out" => '18:00',
+                'new_clock_in' => '19:00',
+                'new_clock_out' => '18:00',
                 'new_break_in' => ['12:00'],
                 'new_break_out' => ['13:00'],
                 'comment' => '備考',
@@ -206,7 +200,7 @@ class AdminAttendanceTest extends TestCase
         // 出勤時間が退勤時間より後になっている場合、エラーメッセージが表示される
         $response->assertRedirect("/attendance/{$attendance->id}");
         $response->assertSessionHasErrors([
-            "new_clock_out" => '出勤時間もしくは退勤時間が不適切な値です'
+            'new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です',
         ]);
 
         // 実表示テストも行う
@@ -217,11 +211,10 @@ class AdminAttendanceTest extends TestCase
             ->assertSee('出勤時間もしくは退勤時間が不適切な値です');
     }
 
-
     /**
      * ID13 休憩開始時間が退勤時間より後になっている場合、エラーメッセージが表示される
      */
-    public function test_shows_validation_error_when_break_in_is_after_clock_out(): void
+    public function testShowsValidationErrorWhenBreakInIsAfterClockOut(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
@@ -267,13 +260,13 @@ class AdminAttendanceTest extends TestCase
     /**
      * ID13 休憩終了時間が退勤時間より後になっている場合、エラーメッセージが表示される
      */
-    public function test_shows_validation_error_when_break_out_is_after_clock_out(): void
+    public function testShowsValidationErrorWhenBreakOutIsAfterClockOut(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
          * 2. 勤怠詳細ページを開く
          * 3. 休憩終了時間を退勤時間より後に設定する
-         * 4. 保存処理をする         
+         * 4. 保存処理をする
          */
 
         // テスト用データ作成
@@ -299,26 +292,26 @@ class AdminAttendanceTest extends TestCase
         // リダイレクト先と、対象項目のエラーメッセージを確認する
         $response->assertRedirect("/attendance/{$attendance->id}");
         $response->assertSessionHasErrors([
-            'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な時間です',
+            'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な値です',
         ]);
 
         // リダイレクト後の詳細画面にエラーメッセージが表示されることを確認
         $this->get("/attendance/{$attendance->id}")
             ->assertOk()
             ->assertViewIs('admin.admin-detail')
-            ->assertSee('休憩時間もしくは退勤時間が不適切な時間です');
+            ->assertSee('休憩時間もしくは退勤時間が不適切な値です');
 
     }
 
     /**
      * ID13 備考欄が未入力の場合のエラーメッセージが表示される
      */
-    public function test_shows_validation_error_when_comment_is_empty(): void
+    public function testShowsValidationErrorWhenCommentIsEmpty(): void
     {
         /**
          * 1. 管理者ユーザーにログインをする
          * 2. 勤怠詳細ページを開く
-         * 3. 備考欄を未入力のまま保存処理をする         
+         * 3. 備考欄を未入力のまま保存処理をする
          */
 
         // テスト用データ作成
@@ -354,9 +347,6 @@ class AdminAttendanceTest extends TestCase
             ->assertSee('備考を記入してください');
     }
 
-
-
-
     /** 指定日の各ユーザーの勤怠情報を確認する。 */
     private function assertAttendanceListForDate(TestResponse $response, Carbon $date): void
     {
@@ -391,7 +381,6 @@ class AdminAttendanceTest extends TestCase
 
     /**
      * テスト用勤怠データの作成
-     * @return void
      */
     private function createAttendancesForDate(?Carbon $targetDate = null): void
     {

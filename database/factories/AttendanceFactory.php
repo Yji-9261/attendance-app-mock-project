@@ -2,14 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Attendance;
 use App\Models\User;
-
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-use Carbon\Carbon;
-
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Attendance>
+ * @extends Factory<Attendance>
  */
 class AttendanceFactory extends Factory
 {
@@ -22,7 +21,7 @@ class AttendanceFactory extends Factory
     {
         $now = Carbon::now();
         $date = fake()->dateTimeBetween($now->startOfMonth(), $now->endOfMonth())->format('Y-m-d');
-        $clock_in = Carbon::parse("{$date}" . fake()->numberBetween(7, 8) . ":" . fake()->numberBetween(0, 59));
+        $clock_in = Carbon::parse("{$date}".fake()->numberBetween(7, 8).':'.fake()->numberBetween(0, 59));
         $clock_out = $clock_in->copy()
             ->addHours(fake()->numberBetween(7, 10))
             ->addMinutes(fake()->numberBetween(0, 59));

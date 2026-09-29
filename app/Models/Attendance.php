@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attendance extends Model
 {
@@ -15,6 +17,7 @@ class Attendance extends Model
         'date',
         'clock_in',
         'clock_out',
+        'comment',
     ];
 
     protected $casts = [
@@ -23,95 +26,116 @@ class Attendance extends Model
         'clock_out' => 'datetime',
     ];
 
+    /**
+     * 勤怠修正申請レコードとのリレーション
+     *
+     * @return HasMany
+     */
     public function applications()
     {
         return $this->hasMany(Application::class);
     }
 
+    /**
+     * 休憩時間レコードとのリレーション
+     *
+     * @return HasMany
+     */
     public function breaktimes()
     {
         return $this->hasMany(BreakTime::class);
     }
 
+    /**
+     * ユーザーレコードとのリレーション
+     *
+     * @return BelongsTo
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * comment
-     * @return Attribute
-     */
-    public function comment(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $applcation = $this->applications()
-                    ->where('approval_status', '承認待ち')
-                    ->latest('application_date')
-                    ->first();
-                return $applcation ? $applcation->comment : "";
-            }
-        );
-    }
+    // /**
+    //  * comment
+    //  */
+    // public function comment(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: function () {
+    //             $applcation = $this->applications()
+    //                 ->where('approval_status', '承認待ち')
+    //                 ->latest('application_date')
+    //                 ->first();
+
+    //             return $applcation ? $applcation->comment : '';
+    //         }
+    //     );
+    // }
 
     /**
-     * 休憩を除いた勤務時間
-     * @return Attribute
+     * 休憩時間を除いた実勤務時間をH:i形式の文字列で返す
      */
     public function totalTime(): Attribute
     {
         return Attribute::make(
             get: function () {
-                // 出退勤が入力されていないなら0とする(想定上は退勤時間が未入力はあり得る)
-                if (!$this->clock_in || !$this->clock_out) {
-                    return 0;
-                }
-                $minutes = (int) $this->clock_in->diffInMinutes($this->clock_out);
-                // 休憩時間を抜く仕様
-                $minutes -= $this->calculateBreakTimeMinutes();
-                return $this->minutestoHM($minutes);
+                return $this->minutestoHM($this->calculateWorkMinutes());
             }
         );
     }
 
     /**
-     * 休憩合計時間
-     * @return Attribute
+     * 休憩時間をH:i形式の文字列で返す
      */
     public function totalBreakTime(): Attribute
     {
         return Attribute::make(
             get: function () {
-                return $this->minutestoHM($this->calculateBreakTimeMinutes());
+                return $this->minutestoHM($this->calculateBreakMinutes());
             }
         );
     }
 
     /**
-     * 休憩時間の総時間を分にして返す
+     * 休憩時間を除いた実勤務時間を分で返す
      */
-    private function calculateBreakTimeMinutes()
+    public function calculateWorkMinutes(): int
     {
-        $breaks = $this->breaktimes;
-        $break_time = 0;
-        foreach ($breaks as $break) {
-            if ($break->break_in && $break->break_out) {
-                $break_time += $break->break_in->diffInMinutes($break->break_out);
-            }
+        // 休憩終了時間が打刻前は休憩時間0として算出
+        if (!$this->clock_out) {
+            return 0;
         }
-        return $break_time;
+        $minutes = (int) $this->clock_in->diffInMinutes($this->clock_out);
+
+        return $minutes - $this->calculateBreakMinutes();
+    }
+
+    /**
+     * 休憩時間合計を分で返す
+     */
+    public function calculateBreakMinutes(): int
+    {
+        return $this->breaktimes->sum(function ($breakTime) {
+            // 休憩終了が打刻前なら０として計算
+            if (!$breakTime->break_out) {
+                return 0;
+            }
+
+            return (int) $breakTime->break_in->diffInMinutes($breakTime->break_out);
+        });
     }
 
     /**
      * 総分数から時:分に変換する
-     * @param mixed $minutes
-     * @return string
+     *
+     * @param  mixed  $minutes
      */
-    private function minutestoHM($minutes)
+    private function minutestoHM($minutes): string
     {
         $h = (int) ((int) $minutes) / 60;
         $m = (int) ((int) $minutes) % 60;
+
         return sprintf('%d:%02d', $h, $m);
     }
 }

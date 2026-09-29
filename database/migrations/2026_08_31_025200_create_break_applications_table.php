@@ -15,8 +15,6 @@ return new class extends Migration {
             $table->foreignId('application_id')->constrained()->cascadeOnDelete();
             $table->time('break_in')->nullable();
             $table->time('break_out')->nullable();
-            // $table->dateTime('break_in')->nullable();
-            // $table->dateTime('break_out')->nullable();
             $table->timestamps();
         });
     }
