@@ -17,6 +17,7 @@ class Attendance extends Model
         'date',
         'clock_in',
         'clock_out',
+        'comment',
     ];
 
     protected $casts = [
@@ -55,22 +56,22 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * comment
-     */
-    public function comment(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $applcation = $this->applications()
-                    ->where('approval_status', '承認待ち')
-                    ->latest('application_date')
-                    ->first();
+    // /**
+    //  * comment
+    //  */
+    // public function comment(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: function () {
+    //             $applcation = $this->applications()
+    //                 ->where('approval_status', '承認待ち')
+    //                 ->latest('application_date')
+    //                 ->first();
 
-                return $applcation ? $applcation->comment : '';
-            }
-        );
-    }
+    //             return $applcation ? $applcation->comment : '';
+    //         }
+    //     );
+    // }
 
     /**
      * 休憩時間を除いた実勤務時間をH:i形式の文字列で返す

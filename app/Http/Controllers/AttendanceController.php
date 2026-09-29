@@ -78,7 +78,7 @@ class AttendanceController extends Controller
                 $endOfMonth->toDateTime(),
             ])
             ->get()
-            ->keyBy(fn ($attendance) => $attendance->date->toDateString());
+            ->keyBy(fn($attendance) => $attendance->date->toDateString());
 
         // blade受け渡し用に月内の勤怠レコードを整形して生成
         $formattedAttendanceRecords =
@@ -289,7 +289,7 @@ class AttendanceController extends Controller
                 'breaks' => $breaks,
                 'clock_in' => $attendance->clock_in->format('H:i'),
                 'clock_out' => $attendance->clock_out?->format('H:i'),
-                'comment' => $application?->comment,
+                'comment' => $attendance?->comment,
             ],
         ]);
     }
@@ -304,7 +304,7 @@ class AttendanceController extends Controller
      */
     private function showByAdmin(Request $request, Attendance $attendance)
     {
-        // 承認待ち中は他の修正申請はない設計のためfirstで問題なし
+        // 承認待ち中の勤怠は修正ボタンを表示させないための処理
         $application = $attendance->applications()
             ->where('approval_status', '承認待ち')
             ->first();
@@ -316,10 +316,10 @@ class AttendanceController extends Controller
                 'id' => $attendance->id,
                 'year' => $attendance->date->year . '年',
                 'date' => $attendance->date->format('n月j日'),
-                'comment' => $application?->comment,
-                'approval_status' => $application?->approval_status,
+                'comment' => $attendance?->comment,
                 'clock_in' => $attendance->clock_in->format('H:i'),
                 'clock_out' => $attendance->clock_out?->format('H:i'),
+                'application' => $application,
 
                 // blade側でis_arrayしているため配列に変換
                 'breaks' => $attendance->breaktimes->map(function ($breakTime) {
@@ -356,7 +356,7 @@ class AttendanceController extends Controller
         // 勤怠が存在しない月には空のcollectionを用意する
         while ($startMonth->lt($endMonth)) {
             $yearMonth = $startMonth->format('Y-m');
-            if (! $sixMonthAttendances->has($yearMonth)) {
+            if (!$sixMonthAttendances->has($yearMonth)) {
                 $sixMonthAttendances->put($yearMonth, collect());
             }
             $startMonth->addMonthNoOverflow();
@@ -407,7 +407,7 @@ class AttendanceController extends Controller
     private function countEarlyLeave(Attendance $attendance): int
     {
         // 退勤打刻前は0とする
-        if (! $attendance->clock_out) {
+        if (!$attendance->clock_out) {
             return 0;
         }
 

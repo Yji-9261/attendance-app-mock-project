@@ -82,19 +82,6 @@ class CorrectRequestTest extends TestCase
         parent::tearDown();
     }
 
-    private function createAttendance()
-    {
-        return $this->user->attendances()
-            ->create([
-                'date' => self::DATE,
-                'clock_in' => self::CLOCK_IN,
-                'clock_out' => self::CLOCK_OUT,
-            ])->breaktimes()->create([
-                'break_in' => self::BREAK_IN,
-                'break_out' => self::BREAK_OUT,
-            ]);
-    }
-
     private function postAttendanceUpdate(
         $newClockIn = self::NEW_CLOCK_IN,
         $newClockOut = self::NEW_CLOCK_OUT,
@@ -122,7 +109,7 @@ class CorrectRequestTest extends TestCase
     public function testExpectedValidationMessageForClockInAfterClockOut()
     {
         // 退勤時間よりも早く設定する
-        $this->postAttendanceUpdate(newClockIn: '23:59:59')
+        $this->postAttendanceUpdate(newClockIn: '23:59')
             ->assertSessionHasErrors([
                 'new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です',
             ]);
@@ -135,7 +122,7 @@ class CorrectRequestTest extends TestCase
      */
     public function testExpectedValidationMessageForBreakInAfterClockOut()
     {
-        $this->postAttendanceUpdate(newBreakIn: '23:59:59')
+        $this->postAttendanceUpdate(newBreakIn: '23:59')
             ->assertSessionHasErrors([
                 'new_break_in.0' => '休憩時間が不適切な値です',
             ]);
@@ -148,9 +135,9 @@ class CorrectRequestTest extends TestCase
      */
     public function testExpectedValidationMessageForBreakOutAfterClockOut()
     {
-        $this->postAttendanceUpdate(newClockIn: '23:59:59')
+        $this->postAttendanceUpdate(newBreakOut: '23:59')
             ->assertSessionHasErrors([
-                'new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です',
+                'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な値です',
             ]);
     }
 
@@ -317,11 +304,13 @@ class CorrectRequestTest extends TestCase
         foreach ($applications as $application) {
             $this->get("/application/{$application->id}")
                 ->assertRedirect("/attendance/{$application->attendance_id}");
+
+            $attendance = $application->attendance;
             $this->get("/attendance/{$application->attendance_id}")
                 ->assertOk()
                 ->assertViewIs('user.user-detail')
-                ->assertViewHas('data', fn ($data) => (int) $data['id'] === $application->attendance_id)
-                ->assertSee($application->comment);
+                ->assertViewHas('data', fn($data) => (int) $data['id'] === $application->attendance_id)
+                ->assertSee($attendance->comment);
         }
 
     }
@@ -357,6 +346,7 @@ class CorrectRequestTest extends TestCase
                 'date' => $date,
                 'clock_in' => $date->copy()->hour(9),
                 'clock_out' => $date->copy()->hour(18),
+                'comment' => 'テスト'
             ]);
             $applications[] = $this->submitCorrectionRequest($attendance, "ユーザー{$user->id}の{$day}日分の修正");
         }

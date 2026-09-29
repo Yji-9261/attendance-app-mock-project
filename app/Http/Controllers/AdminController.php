@@ -52,10 +52,11 @@ class AdminController extends Controller
     /**
      * 管理者ログアウト
      * POST(/admin/logout)
-     *
-     * @param  Request  $request  リクエスト
+
+     * @param Request $request
+     * @return Redirector|RedirectResponse
      */
-    public function logout(Request $request): Redirector
+    public function logout(Request $request): Redirector|RedirectResponse
     {
         // ログアウトしセッション無効化しCSRFトークンを再生成する
         auth()->logout();

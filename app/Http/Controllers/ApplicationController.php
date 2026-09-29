@@ -124,13 +124,14 @@ class ApplicationController extends Controller
         // 管理者による対象勤怠の修正画面オープン中にユーザーが対象勤怠の修正を行った場合に発生する
         // 承認待ちの勤怠修正ガード
         if ($attendance->applications()->where('approval_status', '承認待ち')->exists()) {
-            abort(403, '修正申請承認待ちの勤怠です。管理者に承認を得てから修正を行なってください');
+            abort(403, '承認待ちのため修正できません');
         }
 
         DB::transaction(function () use ($attendance, $validated) {
             // 入力された時間と出勤日を合成してdatetime生成
             $attendance->clock_in = Carbon::parse($validated['new_clock_in']);
             $attendance->clock_out = Carbon::parse($validated['new_clock_out']);
+            $attendance->comment = $validated['comment'];
             $attendance->save();
 
             // 休憩時間をすべて削除してからリクエストの内容で再生成
@@ -168,7 +169,7 @@ class ApplicationController extends Controller
         // 管理者による勤怠修正画面オープン中にユーザーが対象勤怠の修正申請を行った場合に発生する
         // 承認待ちの勤怠修正をガード
         if ($attendance->applications()->where('approval_status', '承認待ち')->exists()) {
-            abort(403, '修正申請承認待ちの勤怠です。管理者に承認を得てから修正を行なってください');
+            abort(403, '承認待ちのため修正できません');
         }
 
         DB::transaction(function () use ($validated, $attendance) {
@@ -199,8 +200,6 @@ class ApplicationController extends Controller
                 }
             }
         });
-
-        // note: 勤怠修正申請が発生した場合、表示するのは修正前？修正申請中のもの？
 
         return redirect("/attendance/{$attendance->id}");
     }

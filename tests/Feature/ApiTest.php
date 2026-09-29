@@ -113,7 +113,7 @@ class ApiTest extends TestCase
             'new_break_out_01' => '13:30:00',
             'new_break_in_02' => '19:00:00',
             'new_break_out_02' => '19:30:00',
-            'comment' => '勤怠修正',
+            'comment' => '',
             'application_date' => '2026-01-02',
         ];
 
@@ -397,6 +397,7 @@ class ApiTest extends TestCase
             'date' => '2026-01-01',
             'clock_in' => '09:00:00',
             'clock_out' => '18:00:00',
+            'comment' => ''
         ]);
 
         return $attendance;

@@ -2,10 +2,8 @@
 
 namespace App\Http\Requests\Api\V1;
 
-use App\Models\Attendance;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UpdateAttendanceRequest extends FormRequest
@@ -33,7 +31,7 @@ class UpdateAttendanceRequest extends FormRequest
                 'date_format:Y-m-d',
                 Rule::unique('attendances')
                     ->ignore($attendance->id)
-                    ->where('user_id', $this->user()->id),
+                    ->where('user_id', $attendance->user_id),
             ],
             'clock_in' => [
                 'required',
@@ -42,6 +40,11 @@ class UpdateAttendanceRequest extends FormRequest
             'clock_out' => [
                 'date_format:H:i:s',
                 'after:clock_in'
+            ],
+            'comment' => [
+                'nullable',
+                'string',
+                'max:255',
             ],
         ];
     }

@@ -34,7 +34,6 @@ class AttendanceRecordController extends Controller
         $query = Attendance::with([
             'user',
             'breaktimes',
-            'applications',
         ]);
 
         $query->when(

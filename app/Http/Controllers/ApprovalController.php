@@ -45,14 +45,17 @@ class ApprovalController extends Controller
         }
 
         DB::transaction(function () use ($application) {
-            $application->attendance->clock_in = $application->new_clock_in;
-            $application->attendance->clock_out = $application->new_clock_out;
+            // 勤怠修正
+            $attendance = $application->attendance;
+            $attendance->clock_in = $application->new_clock_in;
+            $attendance->clock_out = $application->new_clock_out;
+            $attendance->comment = $application->comment;
 
             // 休憩時間修正
-            $application->attendance->breaktimes()->delete();
-            $attendance_id = $application->attendance->id;
+            $attendance->breaktimes()->delete();
+            $attendance_id = $attendance->id;
             foreach ($application->breakapplications as $app_break) {
-                $application->attendance->breaktimes()->create([
+                $attendance->breaktimes()->create([
                     'attendance_id' => $attendance_id,
                     'break_in' => $app_break->break_in,
                     'break_out' => $app_break->break_out,

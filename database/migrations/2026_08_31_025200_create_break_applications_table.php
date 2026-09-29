@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,8 +15,6 @@ return new class extends Migration
             $table->foreignId('application_id')->constrained()->cascadeOnDelete();
             $table->time('break_in')->nullable();
             $table->time('break_out')->nullable();
-            // $table->dateTime('break_in')->nullable();
-            // $table->dateTime('break_out')->nullable();
             $table->timestamps();
         });
     }

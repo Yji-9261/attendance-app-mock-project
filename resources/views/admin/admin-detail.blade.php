@@ -11,6 +11,9 @@
         </div>
         <form class="form" action="{{ url('/attendance/' . $attendanceRecord['id']) }}" method="post">
             @csrf
+        
+            {{-- 修正。承認待ち修正申請レコードがあるなら修正ボタンを表示しない --}}
+            @if (is_null($attendanceRecord['application']))
                 <div class="form__content">
                     <div class="form__group">
                         <label class="form__header" for="name">名前</label>
@@ -112,6 +115,62 @@
                 <div class="form__button">
                     <button class="form__button--submit" type="submit">修正</button>
                 </div>
+
+            @else
+                {{-- 承認待ちあり：閲覧のみ --}}
+                <div class="form__content">
+                    <div class="form__group">
+                        <label class="form__header">名前</label>
+                        <div class="form__input-group">
+                            <input class="form__input form__input--name readonly" type="text" value="{{ $user->name }}"
+                                readonly>
+                        </div>
+                    </div>
+
+                    <div class="form__group">
+                        <label class="form__header">日付</label>
+                        <div class="form__input-group">
+                            <input class="form__input readonly" type="text" value="{{ $attendanceRecord['year'] }}" readonly>
+                            <input class="form__input readonly" type="text" value="{{ $attendanceRecord['date'] }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="form__group">
+                        <label class="form__header">出勤・退勤</label>
+                        <div class="form__input-group">
+                            <input class="form__input readonly" type="text" value="{{ $attendanceRecord['clock_in'] }}" readonly>
+                            <p>〜</p>
+                            <input class="form__input readonly" type="text" value="{{ $attendanceRecord['clock_out'] }}" readonly>
+                        </div>
+                    </div>
+
+                    {{-- 休憩は「休憩」「休憩2」「休憩3」…とセクションを分けて表示 --}}
+                    @foreach($attendanceRecord['breaks'] as $index => $break)
+                        <div class="form__group">
+                            <label class="form__header">{{ $index === 0 ? '休憩' : '休憩' . ($index + 1) }}</label>
+                            <div class="form__input-group">
+                                <input class="form__input readonly" type="text" name="new_break_in[]"
+                                    value="{{ $break['break_in'] }}" readonly>
+                                <p>〜</p>
+                                <input class="form__input readonly" type="text" name="new_break_out[]"
+                                    value="{{ $break['break_out'] }}" readonly>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <div class="form__group">
+                        <label class="form__header">備考</label>
+                        <div class="form__input-group">
+                            <input class="form__textarea readonly" name="comment" value="{{ $attendanceRecord['comment'] }}"
+                                readonly></input>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form__button">
+                    <p class="readonly-message">承認待ちのため修正できません</p>
+                </div>
+            @endif
         </form>
     </div>
 @endsection

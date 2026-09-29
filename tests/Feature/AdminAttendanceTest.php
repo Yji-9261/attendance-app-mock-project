@@ -292,14 +292,14 @@ class AdminAttendanceTest extends TestCase
         // リダイレクト先と、対象項目のエラーメッセージを確認する
         $response->assertRedirect("/attendance/{$attendance->id}");
         $response->assertSessionHasErrors([
-            'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な時間です',
+            'new_break_out.0' => '休憩時間もしくは退勤時間が不適切な値です',
         ]);
 
         // リダイレクト後の詳細画面にエラーメッセージが表示されることを確認
         $this->get("/attendance/{$attendance->id}")
             ->assertOk()
             ->assertViewIs('admin.admin-detail')
-            ->assertSee('休憩時間もしくは退勤時間が不適切な時間です');
+            ->assertSee('休憩時間もしくは退勤時間が不適切な値です');
 
     }
 
@@ -393,9 +393,9 @@ class AdminAttendanceTest extends TestCase
             'clock_in' => $date,
             'clock_out' => $date->copy()->hour(18),
         ])->breaktimes()->create([
-            'break_in' => $date->copy()->hour(12),
-            'break_out' => $date->copy()->hour(13),
-        ]);
+                    'break_in' => $date->copy()->hour(12),
+                    'break_out' => $date->copy()->hour(13),
+                ]);
 
         // 2件目作成
         $date = $targetDate->copy()->startOfDay()->hour(10);
@@ -404,15 +404,15 @@ class AdminAttendanceTest extends TestCase
             'clock_in' => $date,
             'clock_out' => $date->copy()->hour(22),
         ])->breaktimes()->createMany([
-            [
-                'break_in' => $date->copy()->hour(13),
-                'break_out' => $date->copy()->hour(16),
-            ],
-            [
-                'break_in' => $date->copy()->hour(19),
-                'break_out' => $date->copy()->hour(19)->minute(30),
-            ],
-        ]);
+                    [
+                        'break_in' => $date->copy()->hour(13),
+                        'break_out' => $date->copy()->hour(16),
+                    ],
+                    [
+                        'break_in' => $date->copy()->hour(19),
+                        'break_out' => $date->copy()->hour(19)->minute(30),
+                    ],
+                ]);
 
     }
 }

@@ -28,7 +28,7 @@ Route::get('/', function () {
     if (Auth::user()->admin_status) {
         return redirect('/admin/attendance/list');
     } else {
-        // リダイレクトによりHOMEに設定した画面に遷移
+        // 認証済みのためリダイレクトによりHOMEに設定した画面に遷移
         return redirect('login');
     }
 });
@@ -63,14 +63,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/stamp_correction_request/approve/{application}', [ApprovalController::class, 'show']);
     // 申請承認処理
     Route::post('/stamp_correction_request/approve/{application}', [ApprovalController::class, 'store']);
-    // 申請承認処理
+    // CSV出力機能
     Route::post('/export', [StaffController::class, 'exportCsv']);
-
-    // このルートはbladeファイル上にリンクはない。
-    // 要件シート上にはあるので一応用意しておく
-    Route::get('admin/attendance/{attendance}', function (Request $request, Attendance $attendance) {
-        return redirect('/attendance/' . $attendance->id);
-    });
+    // bladeファイル上にリンクはないが要件シート上にはあるので用意しておく
+    // get('/attendance/{attendance}')と同じ
+    Route::get('admin/attendance/{attendance}', [AttendanceController::class, 'show']);
 });
 
 /** 一般ユーザー・管理者共通機能 */
