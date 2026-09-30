@@ -56,23 +56,6 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 
-    // /**
-    //  * comment
-    //  */
-    // public function comment(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: function () {
-    //             $applcation = $this->applications()
-    //                 ->where('approval_status', '承認待ち')
-    //                 ->latest('application_date')
-    //                 ->first();
-
-    //             return $applcation ? $applcation->comment : '';
-    //         }
-    //     );
-    // }
-
     /**
      * 休憩時間を除いた実勤務時間をH:i形式の文字列で返す
      */
@@ -99,6 +82,8 @@ class Attendance extends Model
 
     /**
      * 休憩時間を除いた実勤務時間を分で返す
+     * 
+     * @return int 実勤務時間
      */
     public function calculateWorkMinutes(): int
     {
@@ -113,6 +98,8 @@ class Attendance extends Model
 
     /**
      * 休憩時間合計を分で返す
+     * 
+     * @return int 休憩時間合計
      */
     public function calculateBreakMinutes(): int
     {
@@ -127,11 +114,12 @@ class Attendance extends Model
     }
 
     /**
-     * 総分数から時:分に変換する
-     *
-     * @param  mixed  $minutes
+     * 分から「時:分」形式に変換する
+     * 
+     * @param int $minutes 分
+     * @return string H:i形式の時間文字列
      */
-    private function minutestoHM($minutes): string
+    private function minutestoHM(int $minutes): string
     {
         $h = (int) ((int) $minutes) / 60;
         $m = (int) ((int) $minutes) % 60;

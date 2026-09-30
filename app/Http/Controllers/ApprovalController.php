@@ -35,6 +35,10 @@ class ApprovalController extends Controller
     /**
      * 修正承認処理
      * POST('/stamp_correction_request/approve/{attendance_correct_request_id}')
+     * 
+     * @param Request $request
+     * @param Application $application
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public function store(Request $request, Application $application)
     {
