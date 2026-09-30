@@ -65,6 +65,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/stamp_correction_request/approve/{application}', [ApprovalController::class, 'store']);
     // CSV出力機能
     Route::post('/export', [StaffController::class, 'exportCsv']);
+
     // bladeファイル上にリンクはないが要件シート上にはあるので用意しておく
     // get('/attendance/{attendance}')と同じ
     Route::get('admin/attendance/{attendance}', [AttendanceController::class, 'show']);
@@ -78,6 +79,13 @@ Route::middleware(['auth', 'general.verified'])->group(function () {
     Route::get('/attendance/{attendance}', [AttendanceController::class, 'show']);
     // 修正申請処理
     Route::post('/attendance/{attendance}', [ApplicationController::class, 'store']);
+
+    // bladeファイル上にリンクはないが要件シート上にはあるので用意しておく
+    // get('/attendance/{attendance}')と同じ
+    Route::get('/attendance/detail/{attendance}', [AttendanceController::class, 'show']);
+    // post('/attendance/{attendance}')と同じ
+    Route::post('/attendance/detail/{attendance}', [ApplicationController::class, 'store']);
+
     // 申請一覧表示
     Route::get('/stamp_correction_request/list', [ApplicationController::class, 'index']);
     // 申請詳細表示
