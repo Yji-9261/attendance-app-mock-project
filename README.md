@@ -18,7 +18,7 @@ cd attendance-app-mock-project
 
 #### 2. 依存関係を構築
 ```bash
-docker run --rm　
+docker run --rm 
     -u "$(id -u):$(id -g)" 
     -v "$(pwd):/var/www/html" 
     -w /var/www/html 
@@ -82,8 +82,6 @@ cp .env.example .env
 4. Auth TypeにBearer Tokenを選ぶ
 5. Token欄へ貼り付ける
 6. 動作確認が終了したらログアウトAPIにアクセス（パラメータは不要）
-
-
 
 ## 使用技術
 - PHP 8.2
