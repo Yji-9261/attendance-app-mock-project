@@ -18,13 +18,7 @@ cd attendance-app-mock-project
 
 #### 2. 依存関係を構築
 ```bash
-docker run --rm 
-    -u "$(id -u):$(id -g)" 
-    -v "$(pwd):/var/www/html" 
-    -w /var/www/html 
-    -e COMPOSER_CACHE_DIR=/tmp/composer_cache 
-    laravelsail/php82-composer:latest 
-    composer install
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html -e COMPOSER_CACHE_DIR=/tmp/composer_cache laravelsail/php82-composer:latest composer install
 ```
 
 #### 3. 環境変数ファイルの作成
