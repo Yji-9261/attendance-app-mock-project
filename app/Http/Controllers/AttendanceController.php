@@ -206,8 +206,7 @@ class AttendanceController extends Controller
         $sixMonthsAttendaces = $this->getSixMonthAttendances($request);
         $summaries = $sixMonthsAttendaces
             ->map(function ($monthlyAttendances, $yearMonth) {
-                $summary = $this
-                    ->calculateMonthlyAttendanceReport($monthlyAttendances);
+                $summary = $this->calculateMonthlyAttendanceReport($monthlyAttendances);
 
                 // キーには'Y-m'形式の年月文字列が入る
                 // blade表示用に'month'として月のみを格納する
@@ -220,6 +219,7 @@ class AttendanceController extends Controller
         $total_work_minutes = $summaries->sum('work_minutes');
         $total_overtime_minutes = $summaries->sum('overtime_minutes');
         $total_days = $summaries->sum('total_day');
+        // 0 除算対策
         $avg_work_minutes = $total_days === 0
             ? 0 : $total_work_minutes / $total_days;
 

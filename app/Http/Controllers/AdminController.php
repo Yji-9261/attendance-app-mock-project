@@ -37,7 +37,7 @@ class AdminController extends Controller
             'admin_status' => true,
         ]);
 
-        // 認証完了で僭称IDを再生成しhome画面として勤怠一覧画面へリダイレクト
+        // 認証完了でIDを再生成しhome画面として勤怠一覧画面へリダイレクト
         if ($isAuthorized) {
             $request->session()->regenerate();
 
