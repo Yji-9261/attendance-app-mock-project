@@ -1,6 +1,4 @@
-# お問い合わせフォーム
-
-## coachtech勤怠管理アプリ
+# coachtech勤怠管理アプリ
 勤怠を管理するアプリケーションです。以下の操作が可能です。
 - 出勤・退勤・休憩の打刻
 - 勤怠の修正
@@ -43,7 +41,7 @@ cp .env.example .env
 ./vendor/bin/sail artisan migrate --seed
 ```
 
-#### 7. フロントエンド依存関係のインストールとビルド
+#### 7. フロントエンド依存関係のインストールとサーバー起動
 ```bash
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run dev
@@ -64,6 +62,7 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
  - パスワード: `password`
 
 ## API一覧
+接続先：`http://localhost` 
 | 機能 | メソッド | パス| 認証|
 | --- | --- | --- | --- |
 | ログイン | POST | /api/v1/login | 不要 |
@@ -84,7 +83,7 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
     **管理者**
    - email:`user3@example.com`
    - password: `password`
-2. 返ってきたトークンをコピーする
+2. 返ってきたtokenの値をコピー
 3. Authorizationタブを開く
 4. Auth TypeにBearer Tokenを選ぶ
 5. Token欄へ貼り付ける
@@ -107,11 +106,14 @@ applications ||--o{ break_applications : ""
 
 users{
     unsignedbigint id PK
-    string name
-    string email
+    varchar(255) name
+    varchar(255) email
     datetime email_verified_at
-    string password
-    string remember_token
+    varchar(255) password
+    text two_factor_secret
+    text two_factor_recovery_codes
+    datetime two_factor_confirmed_at
+    varchar(100) remember_token
     datetime created_at
     datetime updated_at
     boolean admin_status
@@ -123,7 +125,7 @@ attendances{
     date date
     time clock_in
     time clock_out
-    string comment
+    varchar(255) comment
     datetime created_at
     datetime updated_at
 }
@@ -143,8 +145,8 @@ applications{
     date application_date
     time new_clock_in
     time new_clock_out
-    string comment
-    string approval_status
+    varchar(255) comment
+    varchar(255) approval_status
     datetime created_at
     datetime updated_at
 }
@@ -160,10 +162,10 @@ break_applications{
 
 personal_access_tokens{
     unsignedbigint id PK
-    string tokenable_type
+    varchar(255) tokenable_type
     unsignedbigint tokenable_id
-    string name
-    sting token
+    varchar(255) name
+    varchar(64) token
     text abilities
     datetime last_used_at
     datetime expires_at
@@ -173,7 +175,7 @@ personal_access_tokens{
 
 failed_jobs{
     unsignedbigint id PK
-    string uuid
+    varchar(255) uuid
     text connection
     text queue
     longtext payload
@@ -181,7 +183,14 @@ failed_jobs{
     datetime failed_at
 }
 
+password_reset_tokens{
+    varchar(255) email PK
+    varchar(255) token
+    datetime created_at
+}
+
 ```
+
 
 ## URL
 - 開発環境 http://localhost<br>
