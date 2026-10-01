@@ -20,9 +20,9 @@ class EnsureEmailIsVerifiedForGeneralUser
     {
         // 機能要件上、メール認証は一般ユーザーのみのため、管理者は意図的に除外している
         if (
-            !$request->user()->admin_status &&
+            ! $request->user()->admin_status &&
             ($request->user() instanceof MustVerifyEmail &&
-                !$request->user()->hasVerifiedEmail())
+                ! $request->user()->hasVerifiedEmail())
         ) {
             // 一般ユーザーで、メール認証を行なっていないならメール認証画面にリダイレクト
             return $request->expectsJson()

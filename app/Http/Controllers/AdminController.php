@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AdminLoginRequest;
+use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,8 +14,8 @@ class AdminController extends Controller
     /**
      * 管理者ログイン画面
      * GET(/admin/login)
-     * 
-     * @return View|\Illuminate\Contracts\View\Factory
+     *
+     * @return View|Factory
      */
     public function loginView(): View
     {
@@ -24,8 +25,9 @@ class AdminController extends Controller
     /**
      * 管理者ログイン処理
      * POST(/admin/login)
-     *
-     * @param  AdminLoginRequest  $request
+     * 
+     * @param AdminLoginRequest $request
+     * @return Redirector|RedirectResponse
      */
     public function login(AdminLoginRequest $request): RedirectResponse|Redirector
     {
@@ -52,7 +54,7 @@ class AdminController extends Controller
     /**
      * 管理者ログアウト
      * POST(/admin/logout)
-
+     * 
      * @param Request $request
      * @return Redirector|RedirectResponse
      */

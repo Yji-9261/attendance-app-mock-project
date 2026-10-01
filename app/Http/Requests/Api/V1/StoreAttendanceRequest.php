@@ -2,17 +2,14 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Log;
 
 class StoreAttendanceRequest extends FormRequest
 {
-
     /**
      * Determine if the user is authorized to make this request
-     * 
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -22,7 +19,7 @@ class StoreAttendanceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -35,17 +32,17 @@ class StoreAttendanceRequest extends FormRequest
             ],
             'clock_in' => [
                 'required',
-                'date_format:H:i:s'
+                'date_format:H:i:s',
             ],
             'clock_out' => [
                 'nullable',
                 'date_format:H:i:s',
-                'after:clock_in'
+                'after:clock_in',
             ],
             'comment' => [
                 'nullable',
                 'string',
-                'max:255'
+                'max:255',
             ],
         ];
     }

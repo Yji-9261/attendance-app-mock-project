@@ -312,7 +312,6 @@ class CorrectRequestTest extends TestCase
                 ->assertViewHas('data', fn($data) => (int) $data['id'] === $application->attendance_id)
                 ->assertSee($attendance->comment);
         }
-
     }
 
     /** 修正前と異なる時刻で申請し、作成された申請を返す。 */
@@ -346,7 +345,7 @@ class CorrectRequestTest extends TestCase
                 'date' => $date,
                 'clock_in' => $date->copy()->hour(9),
                 'clock_out' => $date->copy()->hour(18),
-                'comment' => 'テスト'
+                'comment' => 'テスト',
             ]);
             $applications[] = $this->submitCorrectionRequest($attendance, "ユーザー{$user->id}の{$day}日分の修正");
         }

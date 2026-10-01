@@ -33,7 +33,7 @@ class IndexAttendanceRecordRequest extends FormRequest
                 'nullable',
                 'integer',
                 'min:1',
-                'max:'.self::MAX_PER_PAGE,
+                'max:' . self::MAX_PER_PAGE,
             ],
         ];
     }

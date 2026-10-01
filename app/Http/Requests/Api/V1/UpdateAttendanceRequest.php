@@ -23,12 +23,15 @@ class UpdateAttendanceRequest extends FormRequest
      */
     public function rules(): array
     {
+        // ルートモデルバインディングによる勤怠モデル取得
         $attendance = $this->route('attendanceRecord');
 
         return [
             'date' => [
                 'required',
                 'date_format:Y-m-d',
+                // 実装方法には$this->user_idとあるが、管理者変更における
+                // date重複を避けるためにはattendance->user_idが適切と思われる
                 Rule::unique('attendances')
                     ->ignore($attendance->id)
                     ->where('user_id', $attendance->user_id),
@@ -39,7 +42,7 @@ class UpdateAttendanceRequest extends FormRequest
             ],
             'clock_out' => [
                 'date_format:H:i:s',
-                'after:clock_in'
+                'after:clock_in',
             ],
             'comment' => [
                 'nullable',

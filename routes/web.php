@@ -4,9 +4,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
-use App\Models\Attendance;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -35,12 +36,12 @@ Route::get('/', function () {
 
 /** 一般ユーザーのみの機能 */
 Route::middleware(['auth', 'verified', 'general'])->group(function () {
-    // 勤怠打刻画面表示    
+    // 勤怠打刻画面表示
     Route::get('/attendance', [AttendanceController::class, 'create']);
     // 勤怠打刻処理
     Route::post('/attendance', [AttendanceController::class, 'store']);
     // report処理
-    Route::get('/attendance/report', [AttendanceController::class, 'report']);
+    Route::get('/attendance/report', [ReportController::class, 'report']);
 });
 
 /** 管理者ログイン画面・処理 */
@@ -67,7 +68,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/export', [StaffController::class, 'exportCsv']);
 
     // bladeファイル上にリンクはないが要件シート上にはあるので用意しておく
-    // get('/attendance/{attendance}')と同じ
     Route::get('admin/attendance/{attendance}', [AttendanceController::class, 'show']);
 });
 
@@ -81,9 +81,7 @@ Route::middleware(['auth', 'general.verified'])->group(function () {
     Route::post('/attendance/{attendance}', [ApplicationController::class, 'store']);
 
     // bladeファイル上にリンクはないが要件シート上にはあるので用意しておく
-    // get('/attendance/{attendance}')と同じ
     Route::get('/attendance/detail/{attendance}', [AttendanceController::class, 'show']);
-    // post('/attendance/{attendance}')と同じ
     Route::post('/attendance/detail/{attendance}', [ApplicationController::class, 'store']);
 
     // 申請一覧表示

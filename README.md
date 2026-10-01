@@ -2,12 +2,12 @@
 
 ## coachtech勤怠管理アプリ
 勤怠を管理するアプリケーションです。以下の操作が可能です。
-- 勤怠打刻
-- 勤怠修正
-- 勤怠一覧表示
-- 勤怠統計レポート表示
-- 勤怠月毎CSV出力
-- 勤怠外部操作(API)
+- 出勤・退勤・休憩の打刻
+- 勤怠の修正
+- 勤怠一覧・詳細の表示
+- 勤怠統計レポートの表示
+- 月別勤怠データのCSV出力
+- APIによる勤怠データの取得・登録・更新・削除
 
 ## 環境構築
 #### 1. リポジトリのクローン
@@ -60,7 +60,7 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
  - メールアドレス: `user3@example.com`
  - パスワード: `password`
 
-## APIについて
+## API一覧
 | 機能 | メソッド | パス| 認証|
 | --- | --- | --- | --- |
 | ログイン | POST | /api/v1/login | 不要 |
@@ -72,22 +72,26 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
 | 勤怠削除 | DELETE | /api/v1/attendance-records/{id} | 必要 |
 
 ### Postmanを用いた認証方法
-1. ログインAPIにてテストアカウントのメールアドレス(email)とパスワード(password)パラメータを付与してアクセス
+1. ログインAPIにてログイン
+    ※ リクエストボディに下記パラメータを付与してください
+    #### 一般ユーザー
+   - email:`user1@example.com` または `user2@example.com`
+   - password: `password`
+    #### 管理者
+   - email:`user3@example.com`
+   - password: `password`
+<br>
 2. 返ってきたトークンをコピーする
 3. Authorizationタブを開く
 4. Auth TypeにBearer Tokenを選ぶ
 5. Token欄へ貼り付ける
-6. 動作確認が終了したらログアウトAPIにアクセス（パラメータは不要）
+
+動作確認が終了したらログアウトAPIからログアウトしてください（パラメータは不要）
 
 ## 使用技術
 - PHP 8.2
 - Laravel 10.50
 - MySQL 8.4
-
-## URL
-- 開発環境 http://localhost<br>
-- mailpit http://localhost:8025<br>
-- phpMyAdmin http://localhost:8080<br>
 
 ## ER図
 ```mermaid
@@ -175,3 +179,8 @@ failed_jobs{
 }
 
 ```
+
+## URL
+- 開発環境 http://localhost<br>
+- mailpit http://localhost:8025<br>
+- phpMyAdmin http://localhost:8080<br>

@@ -41,6 +41,8 @@ class ApplicationController extends Controller
      */
     public function show(Request $request, Application $application)
     {
+        $this->authorize('view', $application);
+
         $attendanceId = $application->attendance->id;
 
         return redirect("/attendance/{$attendanceId}");
@@ -57,6 +59,8 @@ class ApplicationController extends Controller
      */
     public function store(ApplicationRequest $request, Attendance $attendance)
     {
+        $this->authorize('update', $attendance);
+
         if ($request->user()->admin_status) {
             return $this->storeByAdmin($request, $attendance);
         } else {

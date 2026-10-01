@@ -24,8 +24,8 @@ class AttendanceRecordController extends Controller
      * 勤怠データ一覧表示
      * GET(/api/v1/attendance-records)
 
-     * @param IndexAttendanceRecordRequest $request 勤怠一覧表示時のフォームリクエスト
-     * @return AnonymousResourceCollection
+     *
+     * @param  IndexAttendanceRecordRequest  $request  勤怠一覧表示時のフォームリクエスト
      */
     public function index(IndexAttendanceRecordRequest $request): AnonymousResourceCollection
     {
@@ -69,9 +69,8 @@ class AttendanceRecordController extends Controller
     /**
      * 勤怠データ新規作成
      * POST(/api/v1/attendance-records/{attendanceRecord})
-     * 
-     * @param StoreAttendanceRequest $request 勤怠登録時のフォームリクエスト
-     * @return JsonResponse
+     *
+     * @param  StoreAttendanceRequest  $request  勤怠登録時のフォームリクエスト
      */
     public function store(StoreAttendanceRequest $request): JsonResponse
     {
@@ -90,9 +89,6 @@ class AttendanceRecordController extends Controller
     /**
      * 勤怠詳細表示
      * GET(/api/v1/attendance-records/{attendanceRecord})
-     * 
-     * @param Attendance $attendanceRecord
-     * @return AttendanceResource
      */
     public function show(Attendance $attendanceRecord): AttendanceResource
     {

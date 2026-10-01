@@ -393,9 +393,9 @@ class AdminAttendanceTest extends TestCase
             'clock_in' => $date,
             'clock_out' => $date->copy()->hour(18),
         ])->breaktimes()->create([
-                    'break_in' => $date->copy()->hour(12),
-                    'break_out' => $date->copy()->hour(13),
-                ]);
+            'break_in' => $date->copy()->hour(12),
+            'break_out' => $date->copy()->hour(13),
+        ]);
 
         // 2件目作成
         $date = $targetDate->copy()->startOfDay()->hour(10);
@@ -404,15 +404,15 @@ class AdminAttendanceTest extends TestCase
             'clock_in' => $date,
             'clock_out' => $date->copy()->hour(22),
         ])->breaktimes()->createMany([
-                    [
-                        'break_in' => $date->copy()->hour(13),
-                        'break_out' => $date->copy()->hour(16),
-                    ],
-                    [
-                        'break_in' => $date->copy()->hour(19),
-                        'break_out' => $date->copy()->hour(19)->minute(30),
-                    ],
-                ]);
+            [
+                'break_in' => $date->copy()->hour(13),
+                'break_out' => $date->copy()->hour(16),
+            ],
+            [
+                'break_in' => $date->copy()->hour(19),
+                'break_out' => $date->copy()->hour(19)->minute(30),
+            ],
+        ]);
 
     }
 }

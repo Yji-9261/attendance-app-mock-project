@@ -6,13 +6,13 @@ use App\Models\attendance;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 
-class AttendanceRecordPolicy
+class AttendancePolicy
 {
     /**
      * Perform pre-authorization checks
-     * 
-     * @param User $user ユーザーモデル
-     * @param string $ability アクション
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  string  $ability  アクション
      * @return bool|null
      */
     public function before(User $user, string $ability)
@@ -20,16 +20,13 @@ class AttendanceRecordPolicy
         if ($user->admin_status) {
             return true;
         }
-
-        // 一般ユーザーの各操作の認可は定義によるためfalseではなくnullを返す
         return null;
     }
 
     /**
      * Determine whether the user can view any models.
-     * 
-     * @param User $user ユーザーモデル
-     * @return bool
+     *
+     * @param  User  $user  ユーザーモデル
      */
     public function viewAny(User $user): bool
     {
@@ -38,21 +35,19 @@ class AttendanceRecordPolicy
 
     /**
      * Determine whether the user can view the model.
-     * 
-     * @param User $user ユーザーモデル
-     * @param attendance $attendance 勤怠モデル
-     * @return bool
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  attendance  $attendance  勤怠モデル
      */
     public function view(User $user, attendance $attendance): bool
     {
-        return true;
+        return $user->id === $attendance->user_id;
     }
 
     /**
      * Determine whether the user can create models.
-     * 
-     * @param User $user ユーザーモデル
-     * @return bool
+     *
+     * @param  User  $user  ユーザーモデル
      */
     public function create(User $user): bool
     {
@@ -61,48 +56,43 @@ class AttendanceRecordPolicy
 
     /**
      * Determine whether the user can update the model.
-     * 
-     * @param User $user ユーザーモデル
-     * @param attendance $attendance 勤怠モデル
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  attendance  $attendance  勤怠モデル
+     *
      * @throws AuthorizationException
-     * @return bool
      */
     public function update(User $user, attendance $attendance): bool
     {
-        // 本人または管理者のみ有効
-        if (($user->id === $attendance->user_id) || $user->admin_status) {
+        if ($user->id === $attendance->user_id) {
             return true;
         }
 
-        // App\Exceptions\Handler.phpでエラー時のjsonを定義
-        throw new AuthorizationException;
+        return false;
     }
 
     /**
      * Determine whether the user can delete the model.
-     * 
-     * @param User $user ユーザーモデル
-     * @param attendance $attendance 勤怠モデル
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  attendance  $attendance  勤怠モデル
+     *
      * @throws AuthorizationException
-     * @return bool
      */
     public function delete(User $user, attendance $attendance): bool
     {
-        // 本人または管理者のみ有効
-        if (($user->id === $attendance->user_id) || $user->admin_status) {
+        if ($user->id === $attendance->user_id) {
             return true;
         }
 
-        // App\Exceptions\Handler.phpでエラー時のjsonを定義
-        throw new AuthorizationException;
+        return false;
     }
 
     /**
      * Determine whether the user can restore the model.
-     * 
-     * @param User $user ユーザーモデル
-     * @param attendance $attendance 勤怠モデル
-     * @return bool
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  attendance  $attendance  勤怠モデル
      */
     public function restore(User $user, attendance $attendance): bool
     {
@@ -111,10 +101,9 @@ class AttendanceRecordPolicy
 
     /**
      * Determine whether the user can permanently delete the model.
-     * 
-     * @param User $user ユーザーモデル
-     * @param attendance $attendance 勤怠モデル
-     * @return bool
+     *
+     * @param  User  $user  ユーザーモデル
+     * @param  attendance  $attendance  勤怠モデル
      */
     public function forceDelete(User $user, attendance $attendance): bool
     {

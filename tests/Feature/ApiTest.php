@@ -397,7 +397,7 @@ class ApiTest extends TestCase
             'date' => '2026-01-01',
             'clock_in' => '09:00:00',
             'clock_out' => '18:00:00',
-            'comment' => ''
+            'comment' => '',
         ]);
 
         return $attendance;

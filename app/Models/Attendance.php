@@ -82,13 +82,13 @@ class Attendance extends Model
 
     /**
      * 休憩時間を除いた実勤務時間を分で返す
-     * 
+     *
      * @return int 実勤務時間
      */
     public function calculateWorkMinutes(): int
     {
         // 休憩終了時間が打刻前は休憩時間0として算出
-        if (!$this->clock_out) {
+        if (! $this->clock_out) {
             return 0;
         }
         $minutes = (int) $this->clock_in->diffInMinutes($this->clock_out);
@@ -98,14 +98,14 @@ class Attendance extends Model
 
     /**
      * 休憩時間合計を分で返す
-     * 
+     *
      * @return int 休憩時間合計
      */
     public function calculateBreakMinutes(): int
     {
         return $this->breaktimes->sum(function ($breakTime) {
             // 休憩終了が打刻前なら０として計算
-            if (!$breakTime->break_out) {
+            if (! $breakTime->break_out) {
                 return 0;
             }
 
@@ -115,8 +115,8 @@ class Attendance extends Model
 
     /**
      * 分から「時:分」形式に変換する
-     * 
-     * @param int $minutes 分
+     *
+     * @param  int  $minutes  分
      * @return string H:i形式の時間文字列
      */
     private function minutestoHM(int $minutes): string

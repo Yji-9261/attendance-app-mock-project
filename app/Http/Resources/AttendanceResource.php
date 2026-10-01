@@ -33,7 +33,7 @@ class AttendanceResource extends JsonResource
     private function getTotalTime(Request $request)
     {
         return $this->when(
-            !$request->routeIs('*.show'),
+            ! $request->routeIs('*.show'),
             $this->total_time
         );
     }
@@ -41,7 +41,7 @@ class AttendanceResource extends JsonResource
     private function getTotalBreakTime(Request $request)
     {
         return $this->when(
-            !$request->routeIs('*.show'),
+            ! $request->routeIs('*.show'),
             $this->total_break_time
         );
     }
@@ -49,7 +49,7 @@ class AttendanceResource extends JsonResource
     private function getUserId(Request $request)
     {
         return $this->when(
-            !$request->routeIs('*.show'),
+            ! $request->routeIs('*.show'),
             $this->user_id
         );
     }
@@ -57,7 +57,7 @@ class AttendanceResource extends JsonResource
     private function getUserName(Request $request)
     {
         return $this->when(
-            !$request->routeIs('*.show'),
+            ! $request->routeIs('*.show'),
             $this->user->name
         );
     }

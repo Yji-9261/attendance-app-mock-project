@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Fluent;
 
@@ -12,10 +16,8 @@ class ApprovalController extends Controller
     /**
      * 修正承認画面表示
      * GET('/stamp_correction_request/approve/{attendance_correct_request_id}')
-     * 
-     * @param Request $request
-     * @param Application $application
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     *
+     * @return Factory|View
      */
     public function show(Request $request, Application $application)
     {
@@ -35,14 +37,12 @@ class ApprovalController extends Controller
     /**
      * 修正承認処理
      * POST('/stamp_correction_request/approve/{attendance_correct_request_id}')
-     * 
-     * @param Request $request
-     * @param Application $application
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     *
+     * @return RedirectResponse|Redirector
      */
     public function store(Request $request, Application $application)
     {
-        //$application = Application::findOrFail($application_id);
+        // $application = Application::findOrFail($application_id);
         // フロント側で要求出せないようにしているが念の為ガード
         if ($application->approval_status !== '承認待ち') {
             return abort(403, '修正申請承認済みです');
