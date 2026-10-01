@@ -73,6 +73,7 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
 
 ### Postmanを用いた認証方法
 1. リクエストボディに下記パラメータを付与し、ログインAPIにアクセス
+
     **一般ユーザー**
    - email:`user1@example.com` または `user2@example.com`
    - password: `password`
