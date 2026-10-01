@@ -50,12 +50,12 @@ cp .env.example .env
 ```
 
 ## 動作確認用アカウント
-#### 一般ユーザー
+**一般ユーザー**
 http://localhost/login にアクセスし下記アカウントでログイン
  - メールアドレス: `user1@example.com` または `user2@example.com`
  - パスワード: `password`
 
-#### 管理者
+**管理者**
 http://localhost/admin/login にアクセスし下記アカウントでログイン
  - メールアドレス: `user3@example.com`
  - パスワード: `password`
@@ -72,19 +72,20 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
 | 勤怠削除 | DELETE | /api/v1/attendance-records/{id} | 必要 |
 
 ### Postmanを用いた認証方法
-1. ログインAPIにてログイン(リクエストボディに下記パラメータを付与してください)
-    #### 一般ユーザー
+1. リクエストボディに下記パラメータを付与し、ログインAPIにアクセス
+    **一般ユーザー**
    - email:`user1@example.com` または `user2@example.com`
    - password: `password`
-    #### 管理者
+    
+    **管理者**
    - email:`user3@example.com`
-   - password: `password`<br>
+   - password: `password`
 2. 返ってきたトークンをコピーする
 3. Authorizationタブを開く
 4. Auth TypeにBearer Tokenを選ぶ
 5. Token欄へ貼り付ける
 
-動作確認が終了したらログアウトAPIからログアウトしてください（パラメータは不要）
+動作確認後はログアウトAPIからログアウトしてくださいリクエストボディは不要です。ログアウトするとそのトークンは無効になります。
 
 ## 使用技術
 - PHP 8.2
