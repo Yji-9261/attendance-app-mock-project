@@ -72,15 +72,13 @@ http://localhost/admin/login にアクセスし下記アカウントでログイ
 | 勤怠削除 | DELETE | /api/v1/attendance-records/{id} | 必要 |
 
 ### Postmanを用いた認証方法
-1. ログインAPIにてログイン<br>
-    ※ リクエストボディに下記パラメータを付与してください
+1. ログインAPIにてログイン(リクエストボディに下記パラメータを付与してください)
     #### 一般ユーザー
    - email:`user1@example.com` または `user2@example.com`
    - password: `password`
     #### 管理者
    - email:`user3@example.com`
-   - password: `password`
-<br>
+   - password: `password`<br>
 2. 返ってきたトークンをコピーする
 3. Authorizationタブを開く
 4. Auth TypeにBearer Tokenを選ぶ
