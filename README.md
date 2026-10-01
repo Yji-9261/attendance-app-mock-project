@@ -50,12 +50,15 @@ cp .env.example .env
 ```
 
 ## 動作確認用アカウント
+
 **一般ユーザー**
+
 http://localhost/login にアクセスし下記アカウントでログイン
  - メールアドレス: `user1@example.com` または `user2@example.com`
  - パスワード: `password`
 
 **管理者**
+
 http://localhost/admin/login にアクセスし下記アカウントでログイン
  - メールアドレス: `user3@example.com`
  - パスワード: `password`
