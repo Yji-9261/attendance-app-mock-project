@@ -6,10 +6,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateAttendanceRequest extends FormRequest
+class UpdateAttendanceRecordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     * 
+     * @return bool 常にtrue
      */
     public function authorize(): bool
     {
@@ -17,7 +19,7 @@ class UpdateAttendanceRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * バリデーションルール
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -29,15 +31,17 @@ class UpdateAttendanceRequest extends FormRequest
         return [
             'date' => [
                 'required',
+                'sometimes',
                 'date_format:Y-m-d',
                 // 実装方法には$this->user_idとあるが、管理者変更における
-                // date重複を避けるためにはattendance->user_idが適切と思われる
+                // date重複を避けるためにattendance->user_idとする
                 Rule::unique('attendances')
                     ->ignore($attendance->id)
                     ->where('user_id', $attendance->user_id),
             ],
             'clock_in' => [
                 'required',
+                'sometimes',
                 'date_format:H:i:s',
             ],
             'clock_out' => [
@@ -52,7 +56,12 @@ class UpdateAttendanceRequest extends FormRequest
         ];
     }
 
-    public function messages()
+    /**
+     * バリデーションメッセージ
+     * 
+     * @return array{"clock_in.date_format": string, "clock_in.required": string, "clock_out.after": string, "clock_out.date_format": string, "comment.max": string, "date.date_format": string, "date.required": string, "date.unique": string}
+     */
+    public function messages(): array
     {
         return [
             'date.required' => '勤怠日は必須です。',

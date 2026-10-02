@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\IndexAttendanceRecordRequest;
-use App\Http\Requests\Api\V1\StoreAttendanceRequest;
-use App\Http\Requests\Api\V1\UpdateAttendanceRequest;
-use App\Http\Resources\AttendanceResource;
+use App\Http\Requests\Api\V1\StoreAttendanceRecordRequest;
+use App\Http\Requests\Api\V1\UpdateAttendanceRecordRequest;
+use App\Http\Resources\AttendanceRecordResource;
 use App\Models\Attendance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,11 +21,11 @@ class AttendanceRecordController extends Controller
     private const DEFAULT_PER_PAGE = 20;
 
     /**
-     * 勤怠データ一覧表示
+     * 勤怠レコード一覧表示
      * GET(/api/v1/attendance-records)
-
-     *
-     * @param  IndexAttendanceRecordRequest  $request  勤怠一覧表示時のフォームリクエスト
+     * 
+     * @param IndexAttendanceRecordRequest $request 勤怠レコード一覧取得リクエスト
+     * @return AnonymousResourceCollection
      */
     public function index(IndexAttendanceRecordRequest $request): AnonymousResourceCollection
     {
@@ -63,16 +63,17 @@ class AttendanceRecordController extends Controller
             ->latest('date')
             ->paginate($validated['per_page'] ?? self::DEFAULT_PER_PAGE);
 
-        return AttendanceResource::collection($attendances);
+        return AttendanceRecordResource::collection($attendances);
     }
 
     /**
      * 勤怠データ新規作成
-     * POST(/api/v1/attendance-records/{attendanceRecord})
-     *
-     * @param  StoreAttendanceRequest  $request  勤怠登録時のフォームリクエスト
+     * POST(/api/v1/attendance-records)
+     * 
+     * @param StoreAttendanceRecordRequest $request 勤怠レコード登録リクエスト
+     * @return JsonResponse
      */
-    public function store(StoreAttendanceRequest $request): JsonResponse
+    public function store(StoreAttendanceRecordRequest $request): JsonResponse
     {
         $validated = $request->validated();
         $attendance = $request->user()
@@ -81,7 +82,7 @@ class AttendanceRecordController extends Controller
 
         $attendance->load(['user', 'breaktimes']);
 
-        return (new AttendanceResource($attendance))
+        return (new AttendanceRecordResource($attendance))
             ->response()
             ->setStatusCode(201);
     }
@@ -89,8 +90,11 @@ class AttendanceRecordController extends Controller
     /**
      * 勤怠詳細表示
      * GET(/api/v1/attendance-records/{attendanceRecord})
+     * 
+     * @param Attendance $attendanceRecord 勤怠モデル
+     * @return AttendanceRecordResource
      */
-    public function show(Attendance $attendanceRecord): AttendanceResource
+    public function show(Attendance $attendanceRecord): AttendanceRecordResource
     {
         $attendanceRecord->load([
             'user',
@@ -98,19 +102,19 @@ class AttendanceRecordController extends Controller
             'applications.breakapplications',
         ]);
 
-        return new AttendanceResource($attendanceRecord);
+        return new AttendanceRecordResource($attendanceRecord);
     }
 
     /**
      * 勤怠更新
      * PUT(/api/v1/attendance-records/{attendanceRecord})
      * 
-     * @param UpdateAttendanceRequest $request
-     * @param Attendance $attendanceRecord
+     * @param UpdateAttendanceRecordRequest $request 勤怠レコード更新リクエスト
+     * @param Attendance $attendanceRecord 勤怠モデル
      * @return JsonResponse
      */
     public function update(
-        UpdateAttendanceRequest $request,
+        UpdateAttendanceRecordRequest $request,
         Attendance $attendanceRecord
     ): JsonResponse {
         $this->authorize('update', $attendanceRecord);
@@ -120,7 +124,7 @@ class AttendanceRecordController extends Controller
 
         $attendanceRecord->load(['user', 'breaktimes']);
 
-        return (new AttendanceResource($attendanceRecord))
+        return (new AttendanceRecordResource($attendanceRecord))
             ->response()
             ->setStatusCode(200);
     }
@@ -129,7 +133,7 @@ class AttendanceRecordController extends Controller
      * 勤怠削除
      * DELETE(/api/v1/attendance-records/{attendanceRecord})
      * 
-     * @param Attendance $attendanceRecord
+     * @param Attendance $attendanceRecord 勤怠モデル
      * @return JsonResponse
      */
     public function destroy(Attendance $attendanceRecord): JsonResponse

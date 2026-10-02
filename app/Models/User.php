@@ -39,13 +39,15 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @return HasMany
      */
-    public function attendances()
+    public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
 
     /**
      * ユーザーのもつ全ての勤怠修正申請レコードとのリレーション
+     * 
+     * @return HasManyThrough
      */
     public function applications(): HasManyThrough
     {
@@ -54,6 +56,8 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * 現在の勤怠状態を返す
+     * 
+     * @return Attribute attendance_statusのアクセサ
      */
     public function attendanceStatus(): Attribute
     {
@@ -65,7 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->whereDate('date', Carbon::now())
                     ->first();
 
-                if (! $attendance) {
+                if (!$attendance) {
                     return '勤務外';
                 }
 
@@ -82,7 +86,7 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->latest('id')
                     ->first();
 
-                if (! $breaktime || $breaktime->break_out) {
+                if (!$breaktime || $breaktime->break_out) {
                     return '出勤中';
                 } else {
                     return '休憩中';

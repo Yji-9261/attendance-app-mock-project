@@ -11,14 +11,19 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    // 勤怠レポート期間6ヶ月
     public const REPORT_MONTHS = 6;
 
+    // 通常勤務時間(分単位)
     public const STANDARD_WORK_MINUTES = 8 * 60;
 
+    // 通常出勤時間(Hour)
     public const START_WORK_HOUR = 9;
 
+    // 通常退勤時間(Hour)
     public const END_WORK_HOUR = 18;
 
+    // 長時間労働時間(分単位)
     public const OVER_WORK_MINUTES = 10 * 60;
 
     /**
@@ -28,17 +33,18 @@ class ReportController extends Controller
      * @param  Request  $request  リクエスト
      * @return Factory|View
      */
-    public function report(Request $request)
+    public function report(Request $request): Factory|View
     {
-        // 月次勤怠レポートを取得
+        // 6ヶ月分の勤怠レコード取得
         $sixMonthsAttendaces = $this->getSixMonthAttendances($request);
         $summaries = $sixMonthsAttendaces
             ->map(function ($monthlyAttendances, $yearMonth) {
+                // 月毎のレポート算出
                 $summary = $this->calculateMonthlyAttendanceReport($monthlyAttendances);
 
-                // キーには'Y-m'形式の年月文字列が入る
-                // blade表示用に'month'として月のみを格納する
-                $summary['month'] = Carbon::parse($yearMonth)->month;
+                // キーには'Y-m'形式の年月文字列が入っている。
+                // blade表示用としてmonthに格納する
+                $summary['month'] = $yearMonth;
 
                 return $summary;
             })->values();
@@ -67,7 +73,7 @@ class ReportController extends Controller
         });
 
         // 今月分のレポート取得
-        $anomalies = $summaries->firstWhere('month', Carbon::now()->month);
+        $anomalies = $summaries->firstWhere('month', Carbon::now()->format('Y-m'));
 
         return view('reports.index', [
             'summary' => $summary,
@@ -87,12 +93,17 @@ class ReportController extends Controller
      * @param  Request  $request  リクエスト
      * @return Collection<int|string, Collection<int|string, mixed>>
      */
-    private function getSixMonthAttendances(Request $request)
+    private function getSixMonthAttendances(Request $request): Collection
     {
-        // 当月を含む6ヶ月分の勤怠レコードを年月毎にグループ化して取得
+        // 開始月を当月を含む6ヶ月前にする
         $now = Carbon::now();
-        $startMonth = $now->copy()->startOfMonth()->subMonthsNoOverflow(self::REPORT_MONTHS - 1);
+        $startMonth = $now->copy()
+            ->startOfMonth()
+            ->subMonthsNoOverflow(self::REPORT_MONTHS - 1);
+
         $endMonth = $now->copy()->endOfMonth();
+
+        // 6ヶ月分の勤怠レコードを取得し、Y-m形式の年月をキーとしてグループ化
         $sixMonthAttendances = $request->user()
             ->attendances()
             ->with('breaktimes')
@@ -105,8 +116,10 @@ class ReportController extends Controller
         // 勤怠が存在しない月には空のcollectionを用意する
         while ($startMonth->lt($endMonth)) {
             $yearMonth = $startMonth->format('Y-m');
-            if (! $sixMonthAttendances->has($yearMonth)) {
-                $sixMonthAttendances->put($yearMonth, collect());
+            if (!$sixMonthAttendances->has($yearMonth)) {
+
+                // 型統一のためIlluminate\Database\Eloquent\Collectionとする
+                $sixMonthAttendances->put($yearMonth, new Collection);
             }
             $startMonth->addMonthNoOverflow();
         }
@@ -119,6 +132,7 @@ class ReportController extends Controller
      * 残業時間を分単位で算出
      *
      * @param  int  $workMinutes  実勤務時間(分単位)
+     * @return int 残業時間
      */
     private function calculateOvertimeMinutes(int $workMinutes): int
     {
@@ -135,6 +149,7 @@ class ReportController extends Controller
      * 遅刻した回数を算出
      *
      * @param  Attendance  $attendance  勤怠レコード
+     * @return int 遅刻なら1、それ以外なら0
      */
     private function countLate(Attendance $attendance): int
     {
@@ -152,11 +167,12 @@ class ReportController extends Controller
      * 早退した回数を算出
      *
      * @param  Attendance  $attendance  勤怠レコード
+     * @return int 早退なら1、それ以外なら0
      */
     private function countEarlyLeave(Attendance $attendance): int
     {
         // 退勤打刻前は0とする
-        if (! $attendance->clock_out) {
+        if (!$attendance->clock_out) {
             return 0;
         }
 
@@ -174,6 +190,7 @@ class ReportController extends Controller
      * 長時間労働回数を算出
      *
      * @param  int  $workMinutes  実勤務時間(分単位)
+     * @return int 長時間労働なら1、それ以外なら0
      */
     private function countLongWork(int $workMinutes): int
     {
@@ -185,10 +202,10 @@ class ReportController extends Controller
     /**
      * 月次レポートを算出
      *
-     * @param  mixed  $monthlyAttendances  月毎の勤怠レコード
-     * @return array{"early_leave_count": int, "late_count": int, "long_work_count": int, "overtime_minutes": int, "total_day": int, "work_minutes": int}
+     * @param  Collection  $monthlyAttendances  月毎の勤怠レコード
+     * @return array|array{"early_leave_count": int, "late_count": int, "long_work_count": int, "overtime_minutes": int, "total_day": int, "work_minutes": int}
      */
-    private function calculateMonthlyAttendanceReport($monthlyAttendances)
+    private function calculateMonthlyAttendanceReport(Collection $monthlyAttendances): array
     {
         $report = [
             'work_minutes' => 0,

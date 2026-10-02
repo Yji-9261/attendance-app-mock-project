@@ -19,18 +19,14 @@ class AttendanceFactory extends Factory
      */
     public function definition(): array
     {
-        $now = Carbon::now();
-        $date = fake()->dateTimeBetween($now->startOfMonth(), $now->endOfMonth())->format('Y-m-d');
-        $clock_in = Carbon::parse("{$date}" . fake()->numberBetween(7, 8) . ':' . fake()->numberBetween(0, 59));
-        $clock_out = $clock_in->copy()
-            ->addHours(fake()->numberBetween(7, 10))
-            ->addMinutes(fake()->numberBetween(0, 59));
+        $date = Carbon::now();
 
         return [
             'user_id' => User::factory(),
             'date' => $date,
-            'clock_in' => $clock_in,
-            'clock_out' => $clock_out,
+            'clock_in' => $date->copy()->startOfDay()->hours(9),
+            'clock_out' => $date->copy()->startOfDay()->hours(18),
+            'comment' => '',
         ];
     }
 }

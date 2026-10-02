@@ -6,10 +6,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreAttendanceRequest extends FormRequest
+class StoreAttendanceRecordRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request
+     * Determine if the user is authorized to make this request.
+     * 
+     * @return bool 常にtrue
      */
     public function authorize(): bool
     {
@@ -17,7 +19,7 @@ class StoreAttendanceRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * バリデーションルール
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -47,7 +49,12 @@ class StoreAttendanceRequest extends FormRequest
         ];
     }
 
-    public function messages()
+    /**
+     * バリデーションメッセージ
+     * 
+     * @return array{"clock_in.date_format": string, "clock_in.required": string, "clock_out.after": string, "clock_out.date_format": string, "comment.max": string, "date.date_format": string, "date.required": string, "date.unique": string}
+     */
+    public function messages(): array
     {
         return [
             'date.required' => '勤怠日は必須です。',

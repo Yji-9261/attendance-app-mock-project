@@ -19,13 +19,12 @@ class BreakTimeFactory extends Factory
      */
     public function definition(): array
     {
-        $break_in = Carbon::parse(fake()->datetime()->format('Y-m-d H:i'));
-        $break_out = $break_in->copy()->addMinutes(rand(15, 59));
+        $date = Carbon::now();
 
         return [
             'attendance_id' => Attendance::factory(),
-            'break_in' => $break_in,
-            'break_out' => $break_out,
+            'break_in' => $date->copy()->startOfDay()->hours(12),
+            'break_out' => $date->copy()->startOfDay()->hours(13),
         ];
     }
 }

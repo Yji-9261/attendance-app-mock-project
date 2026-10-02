@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\GetMonthlyAttendanceRecords;
 use App\Http\Requests\ExportCsvRequest;
 use App\Models\Attendance;
 use App\Models\User;
@@ -13,13 +14,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffController extends Controller
 {
+    use GetMonthlyAttendanceRecords;
+
     /**
      * スタッフ一覧画面表示
      * GET('/admin/staff/list')
      *
      * @return Factory|View
      */
-    public function index()
+    public function index(): Factory|View
     {
         // スタッフとは全一般ユーザーのこと
         return view('admin.staff-list', [
@@ -34,15 +37,19 @@ class StaffController extends Controller
      * @param  Request  $request  リクエスト
      * @return Factory|View
      */
-    public function indexAttendance(Request $request)
+    public function indexAttendance(Request $request): Factory|View
     {
-        // クエリリクエストがないなら現在日付を使用する
         $date = Carbon::now();
+        // 対象日付のクエリリクエストがあるならその日付を対象とする
         if ($request->has('date')) {
-            $date = Carbon::parse($request->query('date'));
+            // バリデーションエラー時はメッセージ出さずに元のページにリダイレクトとのみとする
+            $validated = $request->validate([
+                'date' => 'date_format:Y-m-d',
+            ]);
+            $date = Carbon::parse($validated['date']);
         }
 
-        // 対象日の全勤怠レコードを取得する
+        // 対象日の勤怠レコードを取得する
         $s = $date->copy()->startOfDay()->toDateTime();
         $e = $date->copy()->endOfDay()->toDateTime();
         $attendanceRecords = Attendance::with('breaktimes')
@@ -59,19 +66,23 @@ class StaffController extends Controller
     }
 
     /**
-     * スタッフ勤怠詳細画面表示
+     * スタッフ勤怠月次勤怠一覧画面表示
      * GET('/admin/attendance/staff/{user}')
      *
      * @param  Request  $request  リクエスト
      * @param  User  $user  ユーザーレコード
      * @return Factory|View
      */
-    public function showAttendance(Request $request, User $user)
+    public function showAttendance(Request $request, User $user): Factory|View
     {
-        // クエリリクエストがないなら現在日付を使用する
         $date = Carbon::now();
+        // 対象日付のクエリリクエストがあるならその日付を対象とする
         if ($request->has('date')) {
-            $date = Carbon::parse($request->query('date'));
+            // バリデーションエラー時はメッセージ出さずに元のページにリダイレクトとのみとする
+            $validated = $request->validate([
+                'date' => 'date_format:Y-m',
+            ]);
+            $date = Carbon::parse($validated['date']);
         }
 
         return view('admin.staff-attendance-list', [
@@ -87,10 +98,10 @@ class StaffController extends Controller
      * CSV出力
      * POST('/export')
      *
-     * @param  Request  $request  リクエスト
+     * @param  ExportCsvRequest  $request  CSV出力リクエスト
      * @return StreamedResponse
      */
-    public function exportCsv(ExportCsvRequest $request)
+    public function exportCsv(ExportCsvRequest $request): StreamedResponse
     {
         $validated = $request->validated();
 
@@ -100,7 +111,7 @@ class StaffController extends Controller
         $date = Carbon::parse($validated['year_month'] . '-1 00:00:00');
 
         // ファイル名称に年月と対象のユーザーIDを付与する
-        // ユーザー名はファイル不可文字がついていた場合失敗するのでIDとする
+        // ユーザー名はファイル不可文字が付く可能性があるためIDとする
         $filename =
             $validated['year_month']
             . '月次勤怠データ'
@@ -147,33 +158,5 @@ class StaffController extends Controller
                 'Content-Type' => 'text/csv; charset=UTF-8',
             ]
         );
-    }
-
-    /**
-     * ユーザーごとの月次勤怠データを取得する
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<mixed, array{"clock_in": mixed, "clock_out": mixed, date: mixed, id: mixed, "total_break_time": mixed, "total_time": mixed>|\Illuminate\Support\Collection<mixed, array{"clock_in": mixed, "clock_out": mixed, date: mixed, id: mixed, "total_break_time": mixed, "total_time": mixed}>}
-     */
-    private function getMonthlyAttendanceRecords(User $user, Carbon $date)
-    {
-        $start = $date->copy()->startOfMonth()->toDateTime();
-        $end = $date->copy()->endOfMonth()->toDateTime();
-
-        // 対象年月をdate昇順にデータ整形して取得する
-        return $user->attendances()
-            ->with('breaktimes')
-            ->whereBetween('date', [$start, $end])
-            ->orderBy('date')
-            ->get()
-            ->map(function ($attendance) {
-                return [
-                    'id' => $attendance->id,
-                    'date' => $attendance->date->isoFormat('MM月DD日(ddd)'),
-                    'clock_in' => $attendance->clock_in->format('H:i'),
-                    'clock_out' => $attendance->clock_out?->format('H:i'),
-                    'total_time' => $attendance->total_time,
-                    'total_break_time' => $attendance->total_break_time,
-                ];
-            });
     }
 }

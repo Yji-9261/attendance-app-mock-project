@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Application;
 use App\Models\Attendance;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,12 +19,14 @@ class ApplicationFactory extends Factory
      */
     public function definition(): array
     {
+        $date = Carbon::now();
+
         return [
             'attendance_id' => Attendance::factory(),
-            'application_date' => fake()->dateTime()->format('Y-m-d'),
-            'new_clock_in' => fake()->dateTime(),
-            'new_clock_out' => fake()->dateTime(),
-            'comment' => fake()->word(),
+            'application_date' => $date,
+            'new_clock_in' => $date->copy()->startOfDay()->hours(10),
+            'new_clock_out' => $date->copy()->startOfDay()->hours(19),
+            'comment' => '勤怠修正',
         ];
     }
 }

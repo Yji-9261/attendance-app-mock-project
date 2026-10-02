@@ -12,9 +12,17 @@ class ReportTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const REFERENCE_DATETIME = '2027-02-15 12:00:00';
+
+    // 本番コードとは独立して、仕様の対象月数を定義する。
+    private const EXPECTED_REPORT_MONTHS = 6;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // レポート検証用CSVの対象期間に合わせて現在日時を固定する。
+        $this->travelTo(Carbon::parse(self::REFERENCE_DATETIME));
     }
 
     protected function tearDown(): void
@@ -49,9 +57,6 @@ class ReportTest extends TestCase
         //  anomalies
         // が正しい値で含まれる
 
-        // CSVの対象期間に合わせて現在日時を固定する。
-        $this->travelTo(Carbon::parse('2027-02-15 12:00:00'));
-
         // ユーザー作成時、現在日付を固定してテストするためメール認証日時を固定した日時として認証する
         $user = User::factory()->create(['email_verified_at' => now()]);
 
@@ -66,6 +71,7 @@ class ReportTest extends TestCase
         ]
             = $this->createExpectedReportFromCsv();
 
+        // 勤怠レポート画面遷移検証
         $response = $this->actingAs($user)
             ->get('/attendance/report')
             ->assertOk()
@@ -89,10 +95,9 @@ class ReportTest extends TestCase
         // 2. GET /attendance/report を実行
         // result.各統計が 0 / 空配列で返り、エラーが発生しない
 
-        $this->travelTo(Carbon::parse('2026-09-15 12:00:00'));
         $user = User::factory()->create(['email_verified_at' => now()]);
 
-        // 空データアクセスして問題なくアクセスできるかテスト
+        // 空データの勤怠状況で問題なくアクセスできるかテスト
         $response = $this->actingAs($user)
             ->get('/attendance/report')
             ->assertViewIs('reports.index')
@@ -119,7 +124,7 @@ class ReportTest extends TestCase
      *
      * @param  TestResponse  $response  レポートページのレスポンス
      * @param  array<string, int|float>  $expectedSummary  総労働時間・残業時間・平均労働時間の期待値（分）
-     * @param  list<array<string, int>>  $expectedMonthlyTrend  表示順に並べた月別の期待値
+     * @param  list<array{month: string, work_minutes: int, overtime_minutes: int}>  $expectedMonthlyTrend  表示順に並べた月別の期待値
      * @param  array<string, int>  $expectedAnomalies  当月の遅刻・早退・長時間労働の件数の期待値
      */
     private function checkRepotValues(
@@ -191,7 +196,7 @@ class ReportTest extends TestCase
         $this->assertCount(count($rows), array_unique($keys), 'record_keyが重複しています');
 
         foreach ($rows as $row) {
-            $toDateTime = fn (string $time) => $time === ''
+            $toDateTime = fn(string $time) => $time === ''
                 ? null
                 : Carbon::parse($row['date'] . ' ' . $time);
 
@@ -202,7 +207,7 @@ class ReportTest extends TestCase
             ]);
 
             foreach ($row as $column => $breakIn) {
-                if (! preg_match('/^break_in_(.+)$/', $column, $matches)) {
+                if (!preg_match('/^break_in_(.+)$/', $column, $matches)) {
                     continue;
                 }
                 $breakOutColumn = 'break_out_' . $matches[1];
@@ -228,7 +233,7 @@ class ReportTest extends TestCase
     private function createExpectedReportFromCsv(): array
     {
         $rows = $this->readReportCsv('expected_report.csv');
-        $this->assertCount(6, $rows);
+        $this->assertCount(self::EXPECTED_REPORT_MONTHS, $rows);
         $totalWork = 0;
         $totalOvertime = 0;
         $totalDays = 0;
@@ -240,7 +245,7 @@ class ReportTest extends TestCase
             $totalOvertime += (int) $row['overtime_minutes'];
             $totalDays += (int) $row['total_day'];
             $monthlyTrend[] = [
-                'month' => (int) substr($row['month'], 5, 2),
+                'month' => $row['month'],
                 'work_minutes' => (int) $row['work_minutes'],
                 'overtime_minutes' => (int) $row['overtime_minutes'],
             ];
@@ -286,39 +291,16 @@ class ReportTest extends TestCase
             'long_work_count' => 0,
         ];
 
-        // 月次推移
-        $expectedMonthlyTrend = [
-            [
-                'month' => 9,
+        // 固定した現在日時を基準に、当月から過去6ヶ月分を降順で生成する。
+        $baseMonth = now()->startOfMonth();
+        $expectedMonthlyTrend = [];
+        for ($offset = 0; $offset < self::EXPECTED_REPORT_MONTHS; $offset++) {
+            $expectedMonthlyTrend[] = [
+                'month' => $baseMonth->copy()->subMonthsNoOverflow($offset)->format('Y-m'),
                 'work_minutes' => 0,
                 'overtime_minutes' => 0,
-            ],
-            [
-                'month' => 8,
-                'work_minutes' => 0,
-                'overtime_minutes' => 0,
-            ],
-            [
-                'month' => 7,
-                'work_minutes' => 0,
-                'overtime_minutes' => 0,
-            ],
-            [
-                'month' => 6,
-                'work_minutes' => 0,
-                'overtime_minutes' => 0,
-            ],
-            [
-                'month' => 5,
-                'work_minutes' => 0,
-                'overtime_minutes' => 0,
-            ],
-            [
-                'month' => 4,
-                'work_minutes' => 0,
-                'overtime_minutes' => 0,
-            ],
-        ];
+            ];
+        }
 
         return [
             $expectedSummary,

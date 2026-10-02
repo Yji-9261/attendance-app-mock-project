@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\GetMonthlyAttendanceRecords;
 use App\Models\Attendance;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +13,8 @@ use Illuminate\Routing\Redirector;
 
 class AttendanceController extends Controller
 {
+    use GetMonthlyAttendanceRecords;
+
     /**
      * 勤怠一覧画面
      * GET(/attendance/list)
@@ -20,67 +22,39 @@ class AttendanceController extends Controller
      * @param  Request  $request  リクエスト
      * @return Factory|View
      */
-    public function index(Request $request)
+    public function index(Request $request): Factory|View
     {
-        // リクエストクエリがないなら現在日付を使用する
         $date = Carbon::now();
+        // 対象日付のクエリリクエストがあるならその日付を対象とする
         if ($request->has('date')) {
-            $date = Carbon::parse($request->query('date'));
+            // バリデーションエラー時はメッセージ出さずに元のページにリダイレクトとのみとする
+            $validated = $request->validate([
+                'date' => 'date_format:Y-m',
+            ]);
+            $date = Carbon::parse($validated['date']);
         }
-
-        // 月内の開始日と終了日取得
-        $startOfMonth = $date->copy()->startOfMonth();
-        $endOfMonth = $date->copy()->endOfMonth();
-
-        // 月内の勤怠レコードを年月日文字列をKeyとしてコレクションを生成
-        $monthlyRecords = $request
-            ->user()
-            ->attendances()
-            ->with('breaktimes')
-            ->whereBetween('date', [
-                $startOfMonth->toDateTime(),
-                $endOfMonth->toDateTime(),
-            ])
-            ->get()
-            ->keyBy(fn($attendance) => $attendance->date->toDateString());
-
-        // blade受け渡し用に月内の勤怠レコードを整形して生成
-        $formattedAttendanceRecords =
-            collect(CarbonPeriod::between($startOfMonth, $endOfMonth))
-                ->map(function ($dateTime) use ($monthlyRecords) {
-                    // 日付に対する勤怠レコードを取得する
-                    $attendance = $monthlyRecords->get($dateTime->toDateString());
-
-                    return [
-                        'id' => $attendance?->id,
-                        'date' => $dateTime->isoFormat('MM月DD日(ddd)'),
-                        'clock_in' => $attendance?->clock_in->format('H:i'),
-                        'clock_out' => $attendance?->clock_out?->format('H:i'),
-                        'total_time' => $attendance?->total_time,
-                        'total_break_time' => $attendance?->total_break_time,
-                    ];
-                });
 
         return view('user.user-attendance-list', [
             'date' => $date,
             'previousMonth' => $date->copy()->subMonthNoOverflow()->format('Y-m'),
             'nextMonth' => $date->copy()->addMonthNoOverflow()->format('Y-m'),
-            'formattedAttendanceRecords' => $formattedAttendanceRecords,
+            'formattedAttendanceRecords' => $this->getMonthlyAttendanceRecords($request->user(), $date),
         ]);
     }
 
     /**
-     * 出勤登録画面
+     * 勤怠打刻画面
      * GET(/attendance)
-     *
+     * 
+     * @param Request $request リクエスト
      * @return Factory|View
      */
-    public function create()
+    public function create(Request $request): Factory|View
     {
         $now = Carbon::now();
 
         return view('user.attendance-register', [
-            'user' => auth()->user(),
+            'user' => $request->user(),
             'formattedDate' => $now->isoFormat('YYYY年MM月DD日(ddd)'),
 
             // formattedTimeはjsで制御しているので空欄でもいいが念の為設定しておく
@@ -95,7 +69,7 @@ class AttendanceController extends Controller
      * @param  Request  $request  リクエスト
      * @return RedirectResponse|Redirector
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse|Redirector
     {
         $user = $request->user();
 
@@ -148,28 +122,11 @@ class AttendanceController extends Controller
      * @param  Attendance  $attendance  勤怠レコード
      * @return Factory|View
      */
-    public function show(Request $request, Attendance $attendance)
+    public function show(Request $request, Attendance $attendance): Factory|View
     {
         $this->authorize('view', $attendance);
 
-        if ($request->user()->admin_status) {
-            return $this->showByAdmin($request, $attendance);
-        } else {
-            return $this->showByUser($request, $attendance);
-        }
-    }
-
-    /**
-     * 出勤登録画面
-     * GET(/attendance/{attendance})
-     *
-     * @param  Request  $request  リクエスト
-     * @param  Attendance  $attendance  勤怠レコード
-     * @return Factory|View
-     */
-    private function showByUser(Request $request, Attendance $attendance)
-    {
-        // 承認待ち中は他の修正申請はない設計のためfirstで問題なし
+        // 承認待ち中の勤怠修正申請は一つだけの設計のためfirstで問題なし
         $application = $attendance->applications()
             ->where('approval_status', '承認待ち')
             ->first();
@@ -184,57 +141,32 @@ class AttendanceController extends Controller
                 ];
             });
 
-        // 各フォーマットはFigma参考
-        return view('user.user-detail', [
-            'user' => $attendance->user,
-            'data' => [
-                'id' => $attendance->id,
-                'year' => $attendance->date->year . '年',
-                'date' => $attendance->date->format('n月j日'),
-                'application' => $application,
-                'breaks' => $breaks,
-                'clock_in' => $attendance->clock_in->format('H:i'),
-                'clock_out' => $attendance->clock_out?->format('H:i'),
-                'comment' => $attendance?->comment,
-            ],
-        ]);
-    }
+        // 勤怠詳細データを生成
+        $attendanceRecord = [
+            'id' => $attendance->id,
+            'year' => $attendance->date->year . '年',
+            'date' => $attendance->date->format('n月j日'),
+            'application' => $application,
+            'breaks' => $breaks,
+            'clock_in' => $attendance->clock_in->format('H:i'),
+            'clock_out' => $attendance->clock_out?->format('H:i'),
+            'comment' => $attendance->comment,
+        ];
 
-    /**
-     * 勤怠詳細画面
-     * GET(/attendance/{attendance})
-     *
-     * @param  Request  $request  リクエスト
-     * @param  Attendance  $attendance  勤怠レコード
-     * @return Factory|View
-     */
-    private function showByAdmin(Request $request, Attendance $attendance)
-    {
-        // 承認待ち中の勤怠は修正ボタンを表示させないための処理
-        $application = $attendance->applications()
-            ->where('approval_status', '承認待ち')
-            ->first();
+        // 一般ユーザー、管理者用に項目の調整
+        if ($request->user()->admin_status) {
+            // 休憩時間はblade側で配列として扱うため変換
+            $attendanceRecord['breaks'] = $breaks->toArray();
 
-        // 各フォーマットはFigma参考
-        return view('admin.admin-detail', [
-            'user' => $attendance->user,
-            'attendanceRecord' => [
-                'id' => $attendance->id,
-                'year' => $attendance->date->year . '年',
-                'date' => $attendance->date->format('n月j日'),
-                'comment' => $attendance?->comment,
-                'clock_in' => $attendance->clock_in->format('H:i'),
-                'clock_out' => $attendance->clock_out?->format('H:i'),
-                'application' => $application,
-
-                // blade側でis_arrayしているため配列に変換
-                'breaks' => $attendance->breaktimes->map(function ($breakTime) {
-                    return [
-                        'break_in' => $breakTime->break_in->format('H:i'),
-                        'break_out' => $breakTime->break_out?->format('H:i'),
-                    ];
-                })->toArray(),
-            ],
-        ]);
+            return view('admin.admin-detail', [
+                'user' => $attendance->user,
+                'attendanceRecord' => $attendanceRecord,
+            ]);
+        } else {
+            return view('user.user-detail', [
+                'user' => $attendance->user,
+                'data' => $attendanceRecord,
+            ]);
+        }
     }
 }

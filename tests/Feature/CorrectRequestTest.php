@@ -59,7 +59,7 @@ class CorrectRequestTest extends TestCase
                 'admin_status' => true,
             ]);
 
-        // 勤怠レコード作成
+        // 勤怠・休憩レコード作成
         $this->attendance = $this->user
             ->attendances()
             ->create([
@@ -67,7 +67,6 @@ class CorrectRequestTest extends TestCase
                 'clock_in' => self::CLOCK_IN,
                 'clock_out' => self::CLOCK_OUT,
             ]);
-
         $this->attendance->breaktimes()->create([
             'break_in' => self::BREAK_IN,
             'break_out' => self::BREAK_OUT,
@@ -82,6 +81,15 @@ class CorrectRequestTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 勤怠更新POSTを実行する
+     * @param mixed $newClockIn
+     * @param mixed $newClockOut
+     * @param mixed $newBreakIn
+     * @param mixed $newBreakOut
+     * @param mixed $comment
+     * @return \Illuminate\Testing\TestResponse
+     */
     private function postAttendanceUpdate(
         $newClockIn = self::NEW_CLOCK_IN,
         $newClockOut = self::NEW_CLOCK_OUT,

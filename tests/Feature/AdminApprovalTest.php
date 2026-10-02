@@ -124,7 +124,7 @@ class AdminApprovalTest extends TestCase
         $application = $attendance->applications()->firstOrFail();
 
         $expectedBreaks = $application->breakapplications()->orderBy('id')->get()
-            ->map(fn ($breaktime) => [
+            ->map(fn($breaktime) => [
                 $breaktime->break_in->toDateTimeString(),
                 $breaktime->break_out->toDateTimeString(),
             ])->all();
@@ -147,6 +147,7 @@ class AdminApprovalTest extends TestCase
             'approval_status' => '承認済み',
         ]);
 
+        // 実際に該当の勤怠が更新されているか検証
         $this->assertDatabaseHas('attendances', [
             'id' => $attendance->id,
             'user_id' => $attendance->user_id,
@@ -155,9 +156,9 @@ class AdminApprovalTest extends TestCase
             'clock_out' => $application->new_clock_out->toDateTimeString(),
         ]);
 
-        // 元の休憩が残らず、申請した休憩すべてに置き換わっている
+        // 元の休憩が残らず、申請した休憩すべてに置き換わっているか検証
         $actualBreaks = $attendance->breaktimes()->orderBy('id')->get()
-            ->map(fn ($breaktime) => [
+            ->map(fn($breaktime) => [
                 $breaktime->break_in->toDateTimeString(),
                 $breaktime->break_out->toDateTimeString(),
             ])->all();
@@ -202,7 +203,7 @@ class AdminApprovalTest extends TestCase
         $this->assertSame(1, $tabs->length);
 
         // 対象申請の件数とタブ内の行数を比較し、余分な申請の混入も検出する
-        $expectedCount = $users->sum(fn ($user) => $user->applications->count());
+        $expectedCount = $users->sum(fn($user) => $user->applications->count());
         $this->assertSame(10, $expectedCount);
         $rows = $xpath->query('.//table//tr[td]', $tabs->item(0));
         $this->assertSame($expectedCount, $rows->length);

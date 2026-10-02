@@ -110,7 +110,7 @@ class AttendanceSeeder extends Seeder
 
         $user = User::where('name', 'user2')->firstOrFail();
 
-        // 5月前勤怠生成(空データ)
+        // 5月前勤怠生成(空データとする)
         // $this->createDummy($user, $currentDate, 9, 0, 18, 0, 20, true);
 
         // 4月前勤怠生成(出勤時間遅めに)
@@ -147,7 +147,7 @@ class AttendanceSeeder extends Seeder
             ->hour(9);
         $this->createDummy($user, $currentDate, 9, 1, 18, 30, 5, true);
         $this->createDummy($user, $currentDate, 9, 0, 17, 59, 5, true);
-        $this->createDummy($user, $currentDate, 9, 0, 23, 00, 5, true);
+        $this->createDummy($user, $currentDate, 9, 0, 20, 01, 5, true);
     }
 
     /**
@@ -174,7 +174,6 @@ class AttendanceSeeder extends Seeder
         $isAddDate = false,
         $createdWeekEnd = false,
     ) {
-        // for ($i = 0; $i < $num; ++$i) {
         while ($num) {
             $date = $currentDate->copy();
 

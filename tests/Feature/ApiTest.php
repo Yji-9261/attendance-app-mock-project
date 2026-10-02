@@ -49,6 +49,7 @@ class ApiTest extends TestCase
         $this->createRecordsFromSeed();
 
         // index apiアクセス検証
+        // ステータスコード200が返り
         // レスポンスのjson構造を検証
         $this->getJson('api/v1/attendance-records')
             ->assertOk()
@@ -159,6 +160,7 @@ class ApiTest extends TestCase
         $clock_out = $date->copy()->hour(18);
 
         // apiはY-m-d H:i:s形式で渡す
+        // 201が返るか検証
         $this->postJson('/api/v1/attendance-records', [
             'date' => $date->toDateString(),
             'clock_in' => $clock_in->format('H:i:s'),
@@ -307,11 +309,20 @@ class ApiTest extends TestCase
          * 1.       認証なしで POST/PUT/DELETE /api/v1/attendance-records を実行
          * result.  HTTP 401 が返り、レスポンスが { "message": "Unauthenticated." }
          */
+        // ユーザーと勤怠生成
+        $user = User::factory()->create();
+        $attendance = $user->attendances()->create([
+            'date' => '2026-01-01',
+            'clock_in' => '09:00:00',
+            'clock_out' => '18:00:00',
+        ]);
+
+
         $date = Carbon::now()->startOfDay();
         $clock_in = $date->copy()->hour(9);
         $clock_out = $date->copy()->hour(18);
 
-        // apiはY-m-d H:i:s形式で渡す
+        // 勤怠401ステータス検証
         $this->postJson('/api/v1/attendance-records', [
             'date' => $date->toDateString(),
             'clock_in' => $clock_in->format('H:i:s'),
@@ -320,6 +331,24 @@ class ApiTest extends TestCase
             ->assertJson([
                 'message' => 'Unauthenticated.',
             ]);
+
+        // 勤怠更新401ステータス検証
+        $this->putJson("/api/v1/attendance-records/{$attendance->id}", [
+            'date' => $date->toDateString(),
+            'clock_in' => $clock_in->format('H:i:s'),
+            'clock_out' => $clock_out->format('H:i:s'),
+        ])->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
+
+        // 勤怠削除401ステータス検証
+        $this->deleteJson("/api/v1/attendance-records/{$attendance->id}")
+            ->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
+
     }
     /**
      *  認証済みユーザーは自分の勤怠を更新・削除できる
@@ -344,7 +373,7 @@ class ApiTest extends TestCase
          * result.  HTTP 403 が返り、レスポンスが { "error": "この操作を実行する権限がありません。" }
          */
 
-        // そうされる側のユーザーと対象の勤怠レコードを生成
+        // 操作される側のユーザーと対象の勤怠レコードを生成
         $anotherUser = User::factory()->create();
         $attendance = $anotherUser->attendances()->create([
             'date' => '2026-01-01',

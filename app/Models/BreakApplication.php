@@ -26,7 +26,7 @@ class BreakApplication extends Model
      *
      * @return BelongsTo
      */
-    public function application()
+    public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);
     }

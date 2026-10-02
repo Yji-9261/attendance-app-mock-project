@@ -15,7 +15,7 @@ class CheckAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! auth()->user()->admin_status) {
+        if (! $request->user()->admin_status) {
             abort(403, '管理者権限が必要です。');
         }
 

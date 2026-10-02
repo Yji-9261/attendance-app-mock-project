@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AdminLoginRequest;
+use App\Http\Requests\LoginRequest;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -14,10 +14,10 @@ class AdminController extends Controller
     /**
      * 管理者ログイン画面
      * GET(/admin/login)
-     *
-     * @return View|Factory
+     * 
+     * @return Factory|View
      */
-    public function loginView(): View
+    public function loginView(): Factory|View
     {
         return view('admin.admin-login');
     }
@@ -26,10 +26,10 @@ class AdminController extends Controller
      * 管理者ログイン処理
      * POST(/admin/login)
      * 
-     * @param AdminLoginRequest $request
+     * @param LoginRequest $request ログインリクエスト
      * @return Redirector|RedirectResponse
      */
-    public function login(AdminLoginRequest $request): RedirectResponse|Redirector
+    public function login(LoginRequest $request): RedirectResponse|Redirector
     {
         $validated = $request->validated();
         $isAuthorized = auth()->attempt([
@@ -55,12 +55,13 @@ class AdminController extends Controller
      * 管理者ログアウト
      * POST(/admin/logout)
      * 
-     * @param Request $request
+     * @param Request $request リクエスト
      * @return Redirector|RedirectResponse
      */
     public function logout(Request $request): Redirector|RedirectResponse
     {
-        // ログアウトしセッション無効化しCSRFトークンを再生成する
+        // ログアウト処理
+        // セッション無効化し、CSRFトークンを再生成する
         auth()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

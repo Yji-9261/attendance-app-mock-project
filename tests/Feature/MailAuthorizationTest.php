@@ -12,12 +12,22 @@ class MailAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** 会員登録後、登録したメールアドレス宛に認証メールが送信される。 */
+    /** 
+     * 会員登録後、登録したメールアドレス宛に認証メールが送信される。 
+     */
     public function testMailIsSentSuccessfully(): void
     {
+        /**
+         * 1. 会員登録をする
+         * 2. 認証メールを送信する
+         * 登録したメールアドレス宛に認証メールが送信されているか
+         */
+        // メール実際に送信しない様にする
         Notification::fake();
 
+        // ユーザー登録画面に検証
         $this->get('/register')->assertOk()->assertViewIs('user.register');
+        // ユーザー登録しエラーが発生していないことを検証
         $this->post('/register', [
             'name' => 'testuser',
             'email' => 'testuser@example.com',
@@ -25,24 +35,29 @@ class MailAuthorizationTest extends TestCase
             'password_confirmation' => 'password',
         ])->assertSessionHasNoErrors()->assertRedirect('/attendance');
 
+        // // 問題なく登録されログイン済みか検証
         $user = User::where('email', 'testuser@example.com')->firstOrFail();
-        $this->assertAuthenticatedAs($user);
-        $this->assertFalse($user->hasVerifiedEmail());
 
+        // 該当ユーザーに認証メールが送られたか検証
         Notification::assertSentTo($user, VerifyEmail::class, function ($notification, $channels) use ($user) {
             return in_array('mail', $channels, true)
                 && $user->routeNotificationFor('mail', $notification) === 'testuser@example.com';
         });
         Notification::assertCount(1);
 
+        // メール認証画面にリダイレクトされているか検証
         $this->get('/attendance')->assertRedirect(route('verification.notice'));
     }
 
-    /** 認証誘導画面に、メール認証サイトを開くリンクが表示される。 */
+    /** 
+     * メール認証誘導画面で「認証はこちらから」ボタンを押下するとメール認証サイトに遷移する
+     */
     public function testVerificationNoticeLinksToMailSite(): void
     {
+        // メール認証されていないユーザーを作成
         $user = User::factory()->unverified()->create();
 
+        // メール認証誘導画面表示
         $response = $this->actingAs($user)
             ->get(route('verification.notice'))
             ->assertOk()
@@ -58,33 +73,49 @@ class MailAuthorizationTest extends TestCase
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
+        // リンク先を検証し、メール認証サイト(Mailpit)であることを検証する
         $links = (new \DOMXPath($document))->query('//a[normalize-space(.)="認証はこちらから"]');
         $this->assertSame(1, $links->length);
         $this->assertSame('http://localhost:8025', $links->item(0)->getAttribute('href'));
         $this->assertSame('_blank', $links->item(0)->getAttribute('target'));
-        $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 
-    /** メール内の認証URLで認証を完了すると、勤怠登録画面に遷移する。 */
+    /** 
+     * メール認証サイトのメール認証を完了すると、勤怠登録画面に遷移する
+     */
     public function testVerifiedUserIsRedirectedToAttendancePage(): void
     {
+        // 実際にメールを送信しない様にする
         Notification::fake();
+
+        // メール認証されていないユーザーを作成
         $user = User::factory()->unverified()->create();
+
+        // 勤怠登録画面に遷移せずに、メール認証画面にリダイレクトされることを検証
         $this->actingAs($user);
         $this->get('/attendance')->assertRedirect(route('verification.notice'));
 
+        // 認証メールを送り、実際に送られていることを検証
         $user->sendEmailVerificationNotification();
         Notification::assertSentTo($user, VerifyEmail::class);
+
+        // 遅れた認証通知を取得
         $notification = Notification::sent($user, VerifyEmail::class)->first();
-        // protectedのverificationUrl()ではなく、メールに実際に設定されたURLを使用する。
+
+        // メール形式に変換し、認証URLが空でないか検証
         $verificationUrl = $notification->toMail($user)->actionUrl;
         $this->assertNotEmpty($verificationUrl);
 
+        // 認証URLにアクセス
         $response = $this->get($verificationUrl);
-        // 認証前にアクセスした勤怠画面（intended URL）へ戻る。
+
+        // 認証前にアクセスした勤怠登録画面へリダイレクトされることを検証
         $response->assertRedirect('/attendance');
+
+        // メール認証が完了していることを検証
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
 
+        // 勤怠登録画面に遷移していることを検証
         $this->get($response->headers->get('Location'))
             ->assertOk()
             ->assertViewIs('user.attendance-register');

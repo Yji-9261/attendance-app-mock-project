@@ -11,6 +11,8 @@ class IndexAttendanceRecordRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     * 
+     * @return bool 常にtrue
      */
     public function authorize(): bool
     {
@@ -18,7 +20,7 @@ class IndexAttendanceRecordRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * バリデーションルール
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -38,7 +40,12 @@ class IndexAttendanceRecordRequest extends FormRequest
         ];
     }
 
-    public function messages()
+    /**
+     * バリデーションメッセージ
+     * 
+     * @return array{"date.date_format": string, "month.date_format": string, "page.integer": string, "page.min": string, "per_page.integer": string, "per_page.max": string, "per_page.min": string, "user_id.integer": string, "user_id.min": string}
+     */
+    public function messages(): array
     {
         return [
             'user_id.integer' => '数値を入力してください',

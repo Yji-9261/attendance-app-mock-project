@@ -9,8 +9,9 @@ class UserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * 
+     * @param Request $request リクエスト
+     * @return array{id: mixed, name: mixed}
      */
     public function toArray(Request $request): array
     {

@@ -31,7 +31,7 @@ class Application extends Model
      *
      * @return HasMany
      */
-    public function breakapplications()
+    public function breakapplications(): HasMany
     {
         return $this->hasMany(BreakApplication::class);
     }
@@ -41,7 +41,7 @@ class Application extends Model
      *
      * @return BelongsTo
      */
-    public function attendance()
+    public function attendance(): BelongsTo
     {
         return $this->belongsTo(Attendance::class);
     }

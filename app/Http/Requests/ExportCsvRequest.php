@@ -12,11 +12,11 @@ class ExportCsvRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->user()->admin_status;
+        return $this->user()->admin_status;
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * バリデーションルール
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -28,7 +28,12 @@ class ExportCsvRequest extends FormRequest
         ];
     }
 
-    public function messages()
+    /**
+     * バリデーションメッセージ
+     * 
+     * @return array{"user_id.integer": string, "user_id.required": string, "year_month.date_format": string, "year_month.required": string}
+     */
+    public function messages(): array
     {
         return [
             'user_id.required' => 'ユーザーIDが未入力です',

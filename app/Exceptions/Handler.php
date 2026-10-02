@@ -41,6 +41,8 @@ class Handler extends ExceptionHandler
         }
 
         if ($e instanceof AuthorizationException) {
+            // webも他ユーザーへの勤怠レコードへの読み込み・書き込みポリシーを割り当てているため
+            // 指定はないが、apiのみに限定とする
             if ($request->is('api/*')) {
                 return response()->json([
                     'error' => 'この操作を実行する権限がありません。',

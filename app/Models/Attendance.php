@@ -31,7 +31,7 @@ class Attendance extends Model
      *
      * @return HasMany
      */
-    public function applications()
+    public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
     }
@@ -41,7 +41,7 @@ class Attendance extends Model
      *
      * @return HasMany
      */
-    public function breaktimes()
+    public function breaktimes(): HasMany
     {
         return $this->hasMany(BreakTime::class);
     }
@@ -51,13 +51,15 @@ class Attendance extends Model
      *
      * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
      * 休憩時間を除いた実勤務時間をH:i形式の文字列で返す
+     * 
+     * @return Attribute total_timeのアクセサ
      */
     public function totalTime(): Attribute
     {
@@ -70,6 +72,8 @@ class Attendance extends Model
 
     /**
      * 休憩時間をH:i形式の文字列で返す
+     * 
+     * @return Attribute total_break_timeのアクセサ
      */
     public function totalBreakTime(): Attribute
     {
@@ -87,12 +91,12 @@ class Attendance extends Model
      */
     public function calculateWorkMinutes(): int
     {
-        // 休憩終了時間が打刻前は休憩時間0として算出
-        if (! $this->clock_out) {
+        // 退勤打刻前は勤務時間0として算出
+        if (!$this->clock_out) {
             return 0;
         }
-        $minutes = (int) $this->clock_in->diffInMinutes($this->clock_out);
 
+        $minutes = (int) $this->clock_in->diffInMinutes($this->clock_out);
         return $minutes - $this->calculateBreakMinutes();
     }
 
@@ -105,10 +109,9 @@ class Attendance extends Model
     {
         return $this->breaktimes->sum(function ($breakTime) {
             // 休憩終了が打刻前なら０として計算
-            if (! $breakTime->break_out) {
+            if (!$breakTime->break_out) {
                 return 0;
             }
-
             return (int) $breakTime->break_in->diffInMinutes($breakTime->break_out);
         });
     }
@@ -117,13 +120,12 @@ class Attendance extends Model
      * 分から「時:分」形式に変換する
      *
      * @param  int  $minutes  分
-     * @return string H:i形式の時間文字列
+     * @return string 時間:分形式の文字列
      */
     private function minutestoHM(int $minutes): string
     {
-        $h = (int) ((int) $minutes) / 60;
-        $m = (int) ((int) $minutes) % 60;
-
-        return sprintf('%d:%02d', $h, $m);
+        $hours = intdiv($minutes, 60);
+        $minutes = $minutes % 60;
+        return sprintf('%d:%02d', $hours, $minutes);
     }
 }

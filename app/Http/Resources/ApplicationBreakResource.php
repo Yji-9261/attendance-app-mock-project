@@ -9,8 +9,9 @@ class ApplicationBreakResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * 
+     * @param Request $request リクエスト
+     * @return array{"application_id": int, "break_in": string, "break_out": string, id: int}
      */
     public function toArray(Request $request): array
     {
@@ -20,6 +21,5 @@ class ApplicationBreakResource extends JsonResource
             'break_in' => $this->break_in->format('H:i:s'),
             'break_out' => $this->break_out->format('H:i:s'),
         ];
-
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AdminLoginRequest;
+use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,12 +15,12 @@ class AuthController extends Controller
      * ログイン処理(トークン作成)
      * POST(/api/v1/login)
      * 
-     * @param AdminLoginRequest $request
+     * @param LoginRequest $request ログインリクエスト
      * @return JsonResponse
      */
-    public function login(AdminLoginRequest $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        // emial,passwordによる認証、認証失敗で401エラーとする
+        // email,passwordによる認証、認証失敗で401エラーとする
         $validated = $request->validated();
         $user = User::where('email', $validated['email'])->first();
         if (!$user || !Hash::check($validated['password'], $user->password)) {
@@ -38,9 +38,9 @@ class AuthController extends Controller
 
     /**
      * ログアウト処理(トークンの削除)
-     * GET(/api/v1/logout)
+     * POST(/api/v1/logout)
      * 
-     * @param Request $request
+     * @param Request $request リクエスト
      * @return JsonResponse
      */
     public function logout(Request $request): JsonResponse

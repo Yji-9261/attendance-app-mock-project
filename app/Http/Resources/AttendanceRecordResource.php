@@ -4,13 +4,16 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\MissingValue;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-class AttendanceResource extends JsonResource
+class AttendanceRecordResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * 
+     * @param Request $request リクエスト
+     * @return array{applications: MissingValue|mixed, breaks: MissingValue|mixed, "clock_in": mixed, "clock_out": mixed, comment: mixed, date: mixed, id: mixed, "total_break_time": MissingValue|mixed, "total_time": MissingValue|mixed, user: MissingValue|mixed, "user_id": MissingValue|mixed, "user_name": MissingValue|mixed}
      */
     public function toArray(Request $request): array
     {
@@ -30,38 +33,68 @@ class AttendanceResource extends JsonResource
         ];
     }
 
+    /**
+     * 詳細勤怠以外は実勤務時間を返す
+     * 
+     * @param Request $request リクエスト
+     * @return string|MissingValue
+     */
     private function getTotalTime(Request $request)
     {
         return $this->when(
-            ! $request->routeIs('*.show'),
+            !$request->routeIs('*.show'),
             $this->total_time
         );
     }
 
+    /**
+     * 詳細勤怠以外は総休憩時間を返す
+     * 
+     * @param Request $request リクエスト
+     * @return string|MissingValue
+     */
     private function getTotalBreakTime(Request $request)
     {
         return $this->when(
-            ! $request->routeIs('*.show'),
+            !$request->routeIs('*.show'),
             $this->total_break_time
         );
     }
 
+    /**
+     * 詳細勤怠以外はuser_idを返す
+     * 
+     * @param Request $request リクエスト
+     * @return int|MissingValue
+     */
     private function getUserId(Request $request)
     {
         return $this->when(
-            ! $request->routeIs('*.show'),
+            !$request->routeIs('*.show'),
             $this->user_id
         );
     }
 
+    /**
+     * 詳細勤怠以外はuser_nameを返す
+     * 
+     * @param Request $request リクエスト
+     * @return string|MissingValue
+     */
     private function getUserName(Request $request)
     {
         return $this->when(
-            ! $request->routeIs('*.show'),
+            !$request->routeIs('*.show'),
             $this->user->name
         );
     }
 
+    /**
+     * 詳細勤怠はUser詳細を返す
+     * 
+     * @param Request $request リクエスト
+     * @return UserResource|MissingValue
+     */
     private function getUser(Request $request)
     {
         return $this->when(
@@ -70,6 +103,12 @@ class AttendanceResource extends JsonResource
         );
     }
 
+    /**
+     * 詳細勤怠は休憩時間詳細を返す
+     * 
+     * @param Request $request リクエスト
+     * @return AnonymousResourceCollection|MissingValue
+     */
     private function getBreaks(Request $request)
     {
         return $this->when(
@@ -78,7 +117,13 @@ class AttendanceResource extends JsonResource
         );
     }
 
-    public function getApplications(Request $request)
+    /**
+     * 詳細勤怠は勤怠修正申請詳細を返す
+     * 
+     * @param Request $request リクエスト
+     * @return AnonymousResourceCollection|MissingValue
+     */
+    private function getApplications(Request $request)
     {
         return $this->when(
             $request->routeIs('*.show'),

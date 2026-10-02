@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Application;
 use App\Models\BreakApplication;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,10 +19,12 @@ class BreakApplicationFactory extends Factory
      */
     public function definition(): array
     {
+        $date = Carbon::now();
+
         return [
             'application_id' => Application::factory(),
-            'break_in' => fake()->datetime(),
-            'break_out' => fake()->datetime(),
+            'break_in' => $date->copy()->startOfDay()->hours(13),
+            'break_out' => $date->copy()->startOfDay()->hours(14),
         ];
     }
 }

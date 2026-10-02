@@ -9,8 +9,9 @@ class AttendanceBreakResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * 
+     * @param Request $request リクエスト
+     * @return array{"attendance_id": int, "break_in": string, "break_out": string|null, id: int}
      */
     public function toArray(Request $request): array
     {
@@ -18,7 +19,7 @@ class AttendanceBreakResource extends JsonResource
             'id' => $this->id,
             'attendance_id' => $this->attendance_id,
             'break_in' => $this->break_in->format('H:i:s'),
-            'break_out' => $this->break_out->format('H:i:s'),
+            'break_out' => $this->break_out?->format('H:i:s'),
         ];
     }
 }

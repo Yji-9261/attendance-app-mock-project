@@ -5,10 +5,12 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class AdminLoginRequest extends FormRequest
+class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     * 
+     * @return bool 常にtrue
      */
     public function authorize(): bool
     {
@@ -16,7 +18,7 @@ class AdminLoginRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * バリデーションルール
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -28,6 +30,11 @@ class AdminLoginRequest extends FormRequest
         ];
     }
 
+    /**
+     * バリデーションメッセージ
+     * 
+     * @return array{"email.required": string, "password.required": string}
+     */
     public function messages(): array
     {
         return [

@@ -9,8 +9,9 @@ class ApplicationResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * 
+     * @param Request $request リクエスト
+     * @return array{"application_date": mixed, "attendance_id": mixed, "break_applications": \Illuminate\Http\Resources\Json\AnonymousResourceCollection, comment: mixed, id: mixed, "new_clock_in": mixed, "new_clock_out": mixed}
      */
     public function toArray(Request $request): array
     {

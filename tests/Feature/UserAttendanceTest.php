@@ -45,6 +45,7 @@ class UserAttendanceTest extends TestCase
         // 1. 勤怠情報が登録されたユーザーにログインする
         // 2. 勤怠一覧ページを開く
         // 3. 自分の勤怠情報がすべて表示されていることを確認する
+        // 自分の勤怠情報がすべて表示されている
         // 現在の月が表示されている
 
         // テスト用勤怠情報生成
@@ -90,7 +91,8 @@ class UserAttendanceTest extends TestCase
         );
 
         // 前月勤怠一覧画面表示
-        $response = $this->actingAs($this->user)->get("/attendance/list/?date={$preMonth}");
+        $date = $preMonth->format('Y-m');
+        $response = $this->actingAs($this->user)->get("/attendance/list/?date={$date}");
 
         // 月毎の表示テスト
         $this->assertMonthly($preMonth, $response);
@@ -120,7 +122,8 @@ class UserAttendanceTest extends TestCase
         );
 
         // 翌月勤怠一覧画面表示
-        $response = $this->actingAs($this->user)->get("/attendance/list/?date={$nextMonth}");
+        $date = $nextMonth->format('Y-m');
+        $response = $this->actingAs($this->user)->get("/attendance/list/?date={$date}");
 
         // 月毎の表示テスト
         $this->assertMonthly($nextMonth, $response);

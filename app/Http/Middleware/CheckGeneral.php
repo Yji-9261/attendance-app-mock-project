@@ -15,7 +15,7 @@ class CheckGeneral
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->user()->admin_status) {
+        if ($request->user()->admin_status) {
             abort(403, '一般ユーザー向けの機能です');
         }
 

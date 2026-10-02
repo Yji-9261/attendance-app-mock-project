@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AttendanceRecordController;
-use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\V1\AttendanceRecordController;
+use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,13 +19,13 @@ Route::prefix('v1')->group(function () {
     // 認証(トークン作成)
     Route::post('login', [AuthController::class, 'login']);
 
-    // 認証不要(index/show)
+    // 認証不要
     Route::get('attendance-records', [AttendanceRecordController::class, 'index'])
         ->name('attendance-records.index');
     Route::get('attendance-records/{attendanceRecord}', [AttendanceRecordController::class, 'show'])
         ->name('attendance-records.show');
 
-    // 認証必須(logout/store/update/destroy)
+    // 認証必須
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('attendance-records', [AttendanceRecordController::class, 'store']);

@@ -137,7 +137,8 @@ class LoginTest extends TestCase
     }
 
     /**
-     * ログイン認証機能（管理者） メールアドレスが未入力の場合、バリデーションメッセージが表示される
+     * ログイン認証機能（管理者） 
+     * メールアドレスが未入力の場合、バリデーションメッセージが表示される
      */
     public function testAdminEmailRequiredValidation(): void
     {
@@ -156,6 +157,7 @@ class LoginTest extends TestCase
     }
 
     /**
+     * ログイン認証機能（管理者） 
      * パスワードが未入力の場合、バリデーションメッセージが表示される
      */
     public function testAdminPasswordRequiredValidation(): void
@@ -176,6 +178,7 @@ class LoginTest extends TestCase
     }
 
     /**
+     * ログイン認証機能（管理者） 
      * 登録内容と一致しない場合、バリデーションメッセージが表示される
      */
     public function testAdminEmailNotRegisterValidation(): void
